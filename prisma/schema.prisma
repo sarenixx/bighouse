@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Tenant {
+  id         String     @id
+  name       String
+  slug       String     @unique
+  createdAt  DateTime   @default(now())
+  users      User[]
+  sessions   Session[]
+  managers   Manager[]
+  providers  Provider[]
+  properties Property[]
+  issues     Issue[]
+  tasks      TaskItem[]
+  projects   CapexProject[]
+  documents  DocumentRecord[]
+  notes      TimelineNote[]
+}
+
+model User {
+  id           String    @id
+  tenantId     String
+  email        String    @unique
+  name         String
+  role         String
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id
+  tenantId  String
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Manager {
+  id             String     @id
+  tenantId       String
+  name           String
+  region         String
+  status         String
+  score          Int
+  lastReviewDate DateTime
+  feePosition    String
+  issueCount     Int
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  properties     Property[]
+}
+
+model Provider {
+  id                  String             @id
+  tenantId            String
+  name                String
+  type                String
+  status              String
+  lastReviewed        DateTime
+  flaggedConcerns     String
+  feeNotes            String
+  contractRenewalDate DateTime
+  nextAction          String
+  performanceReviewed Boolean
+  tenant              Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  propertyLinks       PropertyProvider[]
+}
+
+model Property {
+  id                 String             @id
+  tenantId           String
+  slug               String
+  name               String
+  city               String
+  state              String
+  market             String
+  type               String
+  unitCount          Int
+  managerId          String
+  ownershipEntity    String
+  occupancy          Float
+  leasedPercent      Float
+  averageRent        Float
+  delinquencies      Float
+  turnTime           Int
+  adminCosts         Float
+  budgetVsActual     Float
+  capexProgress      Int
+  noi                Float
+  grossMonthlyRent   Float
+  risk               String
+  openIssues         Int
+  activeProjectStatus String
+  lastReviewDate     DateTime
+  nextActionsJson    String
+  keyRisksJson       String
+  summary            String
+  debtStatus         String
+  performanceJson    String
+  managerReviewJson  String
+  renewalCount       Int
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  manager            Manager            @relation(fields: [managerId], references: [id], onDelete: Restrict)
+  providerLinks      PropertyProvider[]
+  issues             Issue[]
+  tasks              TaskItem[]
+  projects           CapexProject[]
+  documents          DocumentRecord[]
+  notes              TimelineNote[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+model PropertyProvider {
+  propertyId String
+  providerId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, providerId])
+}
+
+model Issue {
+  id         String   @id
+  tenantId   String
+  propertyId String
+  title      String
+  detail     String
+  severity   String
+  category   String
+  owner      String
+  dueDate    DateTime
+  status     String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model TaskItem {
+  id             String    @id
+  tenantId       String
+  title          String
+  cadence        String
+  owner          String
+  dueDate        DateTime
+  status         String
+  propertyId     String?
+  providerId     String?
+  decisionNeeded String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property       Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+}
+
+model CapexProject {
+  id            String   @id
+  tenantId      String
+  propertyId    String
+  name          String
+  status        String
+  budget        Float
+  actual        Float
+  progress      Int
+  timeline      String
+  ownerDecision String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model DocumentRecord {
+  id         String    @id
+  tenantId   String
+  propertyId String?
+  category   String
+  title      String
+  updatedAt  DateTime
+  status     String
+  source     String
+  fileUrl    String?
+  mimeType   String?
+  fileSize   Int?
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+}
+
+model TimelineNote {
+  id         String   @id
+  tenantId   String
+  propertyId String
+  author     String
+  date       DateTime
+  label      String
+  note       String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}

@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+dist
+coverage
+.DS_Store
+npm-debug.log*
+dev.db
+dev.db-journal
+.env
+generated
+public/uploads/*
+!public/uploads/.gitkeep
