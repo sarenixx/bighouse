@@ -25,7 +25,7 @@ export default async function TasksPage() {
                 const property = dataset.properties.find((item) => item.id === task.propertyId);
                 const provider = dataset.providers.find((item) => item.id === task.providerId);
                 return (
-                  <div key={task.id} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                  <div key={task.id} data-testid={`task-card-${task.id}`} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
                     <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="font-medium text-foreground">{task.title}</div>

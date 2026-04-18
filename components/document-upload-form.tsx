@@ -39,7 +39,8 @@ export function DocumentUploadForm({
     });
 
     if (!response.ok) {
-      setMessage("Unable to upload document.");
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setMessage(payload?.error ?? "Unable to upload document.");
       return;
     }
 

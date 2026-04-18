@@ -71,7 +71,7 @@ export default async function LoginPage({
                 Demo shortcut: use the dashboard entry above, or open the <Link href="/demo" className="font-medium text-foreground">guided demo script</Link> for a narrated walkthrough.
               </div>
               <div className="rounded-[1.5rem] border border-border/70 bg-white/70 p-4 text-sm text-muted-foreground">
-                Demo credentials: <span className="font-medium text-foreground">trustee@halcyonfamilyoffice.com</span> / <span className="font-medium text-foreground">bighouse-demo</span>
+                Access is provisioned per environment. Use the credentials issued for your demo tenant rather than shared source-level defaults.
               </div>
               <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 <Sparkles className="h-3.5 w-3.5" />

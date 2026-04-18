@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/server/prisma";
 import { verifyPassword } from "@/lib/server/password";
+import {
+  getNextFailedLoginState,
+  getUnlockedLoginState,
+  isAccountLocked
+} from "@/lib/server/account-lockout";
 
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "bh_session";
 
@@ -13,12 +18,50 @@ export async function signIn(email: string, password: string) {
     include: { tenant: true }
   });
 
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  if (!user) {
     return { ok: false as const, error: "Invalid email or access code." };
+  }
+
+  if (isAccountLocked(user.lockedUntil)) {
+    return {
+      ok: false as const,
+      error: "Account temporarily locked after repeated sign-in failures. Please wait 15 minutes and try again."
+    };
+  }
+
+  const shouldResetExpiredLock = Boolean(user.lockedUntil && !isAccountLocked(user.lockedUntil));
+  const currentFailedLoginCount = shouldResetExpiredLock ? 0 : user.failedLoginCount;
+
+  if (shouldResetExpiredLock) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: getUnlockedLoginState()
+    });
+  }
+
+  if (!verifyPassword(password, user.passwordHash)) {
+    const nextState = getNextFailedLoginState(currentFailedLoginCount);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: nextState
+    });
+
+    return {
+      ok: false as const,
+      error: nextState.lockedUntil
+        ? "Account temporarily locked after repeated sign-in failures. Please wait 15 minutes and try again."
+        : "Invalid email or access code."
+    };
   }
 
   const token = randomUUID();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: getUnlockedLoginState()
+  });
 
   await prisma.session.create({
     data: {
@@ -84,7 +127,6 @@ export async function getCurrentSession() {
 
   return {
     id: session.id,
-    token: session.token,
     tenantId: session.tenantId,
     tenantName: session.tenant.name,
     user: {

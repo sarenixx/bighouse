@@ -13,6 +13,19 @@ const prisma = new PrismaClient({
 const tenantId = "tenant-halcyon";
 const providerIds = new Set(dataset.providers.map((provider) => provider.id));
 
+function requireEnv(name: "DEMO_USER_EMAIL" | "DEMO_USER_PASSWORD") {
+  const value = process.env[name];
+
+  if (!value) {
+    throw new Error(`${name} must be set before seeding.`);
+  }
+
+  return value;
+}
+
+const demoUserEmail = requireEnv("DEMO_USER_EMAIL");
+const demoUserPassword = requireEnv("DEMO_USER_PASSWORD");
+
 async function main() {
   await prisma.session.deleteMany();
   await prisma.timelineNote.deleteMany();
@@ -39,10 +52,10 @@ async function main() {
     data: {
       id: "user-trustee",
       tenantId,
-      email: "trustee@halcyonfamilyoffice.com",
+      email: demoUserEmail,
       name: "Avery Bennett",
       role: "Trust Officer",
-      passwordHash: hashPassword("bighouse-demo")
+      passwordHash: hashPassword(demoUserPassword)
     }
   });
 

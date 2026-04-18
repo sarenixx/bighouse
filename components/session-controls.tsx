@@ -56,7 +56,7 @@ export function SessionControls() {
       <div className="rounded-full border border-border bg-white/80 px-4 py-2.5 text-sm text-muted-foreground">
         {data.session.user.name} · {data.session.user.role}
       </div>
-      <Button variant="outline" size="sm" onClick={handleLogout} disabled={isPending}>
+      <Button data-testid="logout-button" variant="outline" size="sm" onClick={handleLogout} disabled={isPending}>
         <LogOut className="mr-2 h-4 w-4" />
         Sign out
       </Button>

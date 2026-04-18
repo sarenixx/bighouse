@@ -31,6 +31,8 @@ model User {
   name         String
   role         String
   passwordHash String
+  failedLoginCount Int   @default(0)
+  lockedUntil      DateTime?
   createdAt    DateTime  @default(now())
   tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   sessions     Session[]

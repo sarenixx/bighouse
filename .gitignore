@@ -3,6 +3,8 @@ node_modules
 out
 dist
 coverage
+test-results
+playwright-report
 .DS_Store
 npm-debug.log*
 dev.db

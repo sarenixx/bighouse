@@ -41,16 +41,16 @@ export function TaskUpdateForm({ task }: { task: TaskItem }) {
       </label>
       <label className="space-y-1">
         <span>Due date</span>
-        <input type="date" className="h-10 w-full rounded-full border border-border bg-white px-4 text-sm outline-none" value={form.dueDate} onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))} />
+        <input data-testid={`task-due-date-${task.id}`} type="date" className="h-10 w-full rounded-full border border-border bg-white px-4 text-sm outline-none" value={form.dueDate} onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))} />
       </label>
       <div className="flex items-end">
-        <Button className="w-full" size="sm" onClick={save} disabled={isPending}>
+        <Button data-testid={`task-save-${task.id}`} className="w-full" size="sm" onClick={save} disabled={isPending}>
           {isPending ? "Saving..." : "Update task"}
         </Button>
       </div>
       <label className="space-y-1 md:col-span-4">
         <span>Decision needed</span>
-        <input className="h-10 w-full rounded-full border border-border bg-white px-4 text-sm outline-none" value={form.decisionNeeded} onChange={(event) => setForm((current) => ({ ...current, decisionNeeded: event.target.value }))} />
+        <input data-testid={`task-decision-${task.id}`} className="h-10 w-full rounded-full border border-border bg-white px-4 text-sm outline-none" value={form.decisionNeeded} onChange={(event) => setForm((current) => ({ ...current, decisionNeeded: event.target.value }))} />
       </label>
     </div>
   );

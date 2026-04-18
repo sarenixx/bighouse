@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { toErrorResponse } from "@/lib/server/app-route-error";
 import { updateIssueForCurrentTenant } from "@/lib/server/portfolio-service";
 
 const updateIssueSchema = z.object({
@@ -17,17 +18,21 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const payload = await request.json().catch(() => null);
-  const parsed = updateIssueSchema.safeParse(payload);
+  try {
+    const { id } = await params;
+    const payload = await request.json().catch(() => null);
+    const parsed = updateIssueSchema.safeParse(payload);
 
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid issue update payload." }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid issue update payload." }, { status: 400 });
+    }
+
+    await updateIssueForCurrentTenant(id, parsed.data);
+    revalidatePath("/");
+    revalidatePath("/properties");
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return toErrorResponse(error);
   }
-
-  await updateIssueForCurrentTenant(id, parsed.data);
-  revalidatePath("/");
-  revalidatePath("/properties");
-
-  return NextResponse.json({ ok: true });
 }

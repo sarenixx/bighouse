@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { toErrorResponse } from "@/lib/server/app-route-error";
 import { updateTaskForCurrentTenant } from "@/lib/server/portfolio-service";
 
 const updateTaskSchema = z.object({
@@ -15,17 +16,21 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const payload = await request.json().catch(() => null);
-  const parsed = updateTaskSchema.safeParse(payload);
+  try {
+    const { id } = await params;
+    const payload = await request.json().catch(() => null);
+    const parsed = updateTaskSchema.safeParse(payload);
 
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid task update payload." }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid task update payload." }, { status: 400 });
+    }
+
+    await updateTaskForCurrentTenant(id, parsed.data);
+    revalidatePath("/");
+    revalidatePath("/tasks");
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return toErrorResponse(error);
   }
-
-  await updateTaskForCurrentTenant(id, parsed.data);
-  revalidatePath("/");
-  revalidatePath("/tasks");
-
-  return NextResponse.json({ ok: true });
 }

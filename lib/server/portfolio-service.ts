@@ -18,6 +18,12 @@ import type {
 } from "@/lib/types";
 import { prisma } from "@/lib/server/prisma";
 import { requireSession } from "@/lib/server/auth";
+import { AppRouteError } from "@/lib/server/app-route-error";
+import {
+  assertMutationCountUpdated,
+  requireTenantPropertyAccess
+} from "@/lib/server/mutation-guards";
+import { validateUploadFile } from "@/lib/server/upload-validation";
 
 type PropertyRecord = Prisma.PropertyGetPayload<{
   include: {
@@ -287,10 +293,14 @@ export async function createIssueForCurrentTenant(input: {
   status: Issue["status"];
 }) {
   const session = await requireSession();
+  await requireTenantPropertyAccess({
+    tenantId: session.tenantId,
+    propertyId: input.propertyId
+  });
 
   return prisma.issue.create({
     data: {
-      id: `issue-${crypto.randomUUID()}`,
+      id: `issue-${randomUUID()}`,
       tenantId: session.tenantId,
       propertyId: input.propertyId,
       title: input.title,
@@ -309,8 +319,7 @@ export async function updateIssueForCurrentTenant(
   patch: Partial<Pick<Issue, "status" | "severity" | "owner" | "dueDate" | "detail" | "title">>
 ) {
   const session = await requireSession();
-
-  return prisma.issue.updateMany({
+  const result = await prisma.issue.updateMany({
     where: { id: issueId, tenantId: session.tenantId },
     data: {
       ...(patch.status ? { status: patch.status } : {}),
@@ -321,6 +330,9 @@ export async function updateIssueForCurrentTenant(
       ...(patch.title ? { title: patch.title } : {})
     }
   });
+
+  assertMutationCountUpdated(result.count, "Issue");
+  return result;
 }
 
 export async function updateTaskForCurrentTenant(
@@ -328,8 +340,7 @@ export async function updateTaskForCurrentTenant(
   patch: Partial<Pick<TaskItem, "status" | "owner" | "dueDate" | "decisionNeeded">>
 ) {
   const session = await requireSession();
-
-  return prisma.taskItem.updateMany({
+  const result = await prisma.taskItem.updateMany({
     where: { id: taskId, tenantId: session.tenantId },
     data: {
       ...(patch.status ? { status: patch.status } : {}),
@@ -338,6 +349,9 @@ export async function updateTaskForCurrentTenant(
       ...(patch.decisionNeeded ? { decisionNeeded: patch.decisionNeeded } : {})
     }
   });
+
+  assertMutationCountUpdated(result.count, "Task");
+  return result;
 }
 
 export async function updateManagerReviewForCurrentTenant(input: {
@@ -347,15 +361,22 @@ export async function updateManagerReviewForCurrentTenant(input: {
   annualSiteVisitComplete?: boolean;
 }) {
   const session = await requireSession();
-  const property = await prisma.property.findFirst({
-    where: { id: input.propertyId, tenantId: session.tenantId }
+  const property = await requireTenantPropertyAccess({
+    tenantId: session.tenantId,
+    propertyId: input.propertyId
+  });
+  const propertyRecord = await prisma.property.findUnique({
+    where: { id: property.id }
   });
 
-  if (!property) {
-    throw new Error("Property not found.");
+  if (!propertyRecord) {
+    throw new AppRouteError("Property not found for the current account.", {
+      status: 404,
+      code: "property_not_found"
+    });
   }
 
-  const managerReview = parseJson<ManagerScorecard>(property.managerReviewJson);
+  const managerReview = parseJson<ManagerScorecard>(propertyRecord.managerReviewJson);
   const nextReview: ManagerScorecard = {
     ...managerReview,
     reviewerNotes: input.reviewerNotes ?? managerReview.reviewerNotes,
@@ -382,6 +403,10 @@ export async function createTimelineNoteForCurrentTenant(input: {
   note: string;
 }) {
   const session = await requireSession();
+  await requireTenantPropertyAccess({
+    tenantId: session.tenantId,
+    propertyId: input.propertyId
+  });
 
   return prisma.timelineNote.create({
     data: {
@@ -409,17 +434,24 @@ export async function createDocumentForCurrentTenant(input: {
   let mimeType: string | undefined;
   let fileSize: number | undefined;
 
+  if (input.propertyId) {
+    await requireTenantPropertyAccess({
+      tenantId: session.tenantId,
+      propertyId: input.propertyId
+    });
+  }
+
   if (input.file && input.file.size > 0) {
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
     await mkdir(uploadsDir, { recursive: true });
-    const sanitized = input.file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const storedName = `${Date.now()}-${randomUUID()}-${sanitized}`;
+    const upload = validateUploadFile(input.file);
+    const storedName = upload.sanitizedFilename;
     const destination = path.join(uploadsDir, storedName);
     const arrayBuffer = await input.file.arrayBuffer();
     await writeFile(destination, Buffer.from(arrayBuffer));
     fileUrl = `/uploads/${storedName}`;
-    mimeType = input.file.type || "application/octet-stream";
-    fileSize = input.file.size;
+    mimeType = upload.mimeType;
+    fileSize = upload.fileSize;
   }
 
   return prisma.documentRecord.create({

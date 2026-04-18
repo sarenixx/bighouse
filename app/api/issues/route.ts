@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { toErrorResponse } from "@/lib/server/app-route-error";
 import { createIssueForCurrentTenant } from "@/lib/server/portfolio-service";
 
 const createIssueSchema = z.object({
@@ -16,17 +17,21 @@ const createIssueSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const payload = await request.json().catch(() => null);
-  const parsed = createIssueSchema.safeParse(payload);
+  try {
+    const payload = await request.json().catch(() => null);
+    const parsed = createIssueSchema.safeParse(payload);
 
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid issue payload." }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid issue payload." }, { status: 400 });
+    }
+
+    await createIssueForCurrentTenant(parsed.data);
+    revalidatePath("/");
+    revalidatePath("/properties");
+    revalidatePath(`/properties/${payload.propertySlug ?? ""}`);
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return toErrorResponse(error);
   }
-
-  await createIssueForCurrentTenant(parsed.data);
-  revalidatePath("/");
-  revalidatePath("/properties");
-  revalidatePath(`/properties/${payload.propertySlug ?? ""}`);
-
-  return NextResponse.json({ ok: true });
 }
