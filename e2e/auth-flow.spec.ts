@@ -13,6 +13,43 @@ async function login(page: Parameters<typeof test>[0]["page"], password = demoPa
 }
 
 test.describe.serial("auth flow", () => {
+  test("toggles access code visibility on the login form", async ({ page }) => {
+    await page.goto("/login");
+
+    const passwordInput = page.getByTestId("login-password");
+    const toggle = page.getByRole("button", { name: "Show access code" });
+
+    await expect(passwordInput).toHaveAttribute("type", "password");
+
+    await toggle.click();
+    await expect(passwordInput).toHaveAttribute("type", "text");
+    await expect(page.getByRole("button", { name: "Hide access code" })).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByRole("button", { name: "Hide access code" }).click();
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await expect(page.getByRole("button", { name: "Show access code" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("supports keyboard toggling for access code visibility", async ({ page }) => {
+    await page.goto("/login");
+
+    const passwordInput = page.getByTestId("login-password");
+    const toggle = page.getByRole("button", { name: "Show access code" });
+
+    await page.getByTestId("login-email").focus();
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab");
+    await expect(toggle).toBeFocused();
+
+    await page.keyboard.press("Enter");
+    await expect(passwordInput).toHaveAttribute("type", "text");
+    await expect(page.getByRole("button", { name: "Hide access code" })).toHaveAttribute("aria-pressed", "true");
+
+    await page.keyboard.press(" ");
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await expect(page.getByRole("button", { name: "Show access code" })).toHaveAttribute("aria-pressed", "false");
+  });
+
   test("logs in and lands on the portfolio overview", async ({ page }) => {
     await login(page);
 

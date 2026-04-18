@@ -121,7 +121,6 @@ export async function getCurrentSession() {
     if (session) {
       await prisma.session.delete({ where: { token } });
     }
-    cookieStore.delete(COOKIE_NAME);
     return null;
   }
 
