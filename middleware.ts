@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "bh_session";
 
-const publicPaths = ["/", "/login", "/api/auth/login"];
+const publicPaths = ["/", "/login", "/privacy", "/terms", "/api/auth/login"];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

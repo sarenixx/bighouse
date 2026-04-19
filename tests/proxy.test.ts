@@ -25,4 +25,16 @@ describe("proxy", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   });
+
+  it("allows public legal pages through without a session", async () => {
+    const { middleware } = await import("@/middleware");
+
+    const privacyResponse = await middleware(new NextRequest("http://localhost/privacy"));
+    const termsResponse = await middleware(new NextRequest("http://localhost/terms"));
+
+    expect(privacyResponse.status).toBe(200);
+    expect(privacyResponse.headers.get("location")).toBeNull();
+    expect(termsResponse.status).toBe(200);
+    expect(termsResponse.headers.get("location")).toBeNull();
+  });
 });
