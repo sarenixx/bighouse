@@ -44,8 +44,15 @@ if ! npx wrangler whoami >/dev/null 2>&1; then
   exit 1
 fi
 
+require_env CLOUDFLARE_ACCOUNT_ID
+require_env CLOUDFLARE_DATABASE_ID
+require_env CLOUDFLARE_D1_TOKEN
+
 print_step "Applying remote D1 migrations for $DB_NAME"
 npx wrangler d1 migrations apply "$DB_NAME" --remote
+
+print_step "Backfilling remote property scoreboard fields"
+npm run db:backfill:scoreboard
 
 print_step "Deploying Cloudflare Worker"
 npm run deploy

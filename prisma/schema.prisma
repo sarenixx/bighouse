@@ -121,6 +121,9 @@ model Property {
   debtStatus         String
   performanceJson    String
   managerReviewJson  String
+  scoreInputsJson    String
+  expenseCategoriesJson String
+  oversightContactsJson String
   renewalCount       Int
   tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   manager            Manager            @relation(fields: [managerId], references: [id], onDelete: Restrict)

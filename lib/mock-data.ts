@@ -1,13 +1,17 @@
 import type {
   CapexProject,
   DocumentRecord,
+  ExpenseCategoryReview,
   Issue,
   Manager,
+  OversightContact,
   PortfolioDataset,
   Property,
+  PropertyScoreInputs,
   Provider,
   TaskItem,
-  TimelineNote
+  TimelineNote,
+  StatusTone
 } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
@@ -47,6 +51,207 @@ const monthlySeries = (
     turnDays: base.turnDays[index],
     vacancyRate: base.vacancyRate[index]
   }));
+
+const assetLeadByManager: Record<string, string> = {
+  "mgr-bridge": "Jordan Hale",
+  "mgr-millstone": "Leah Morgan",
+  "mgr-sterling": "Maya Ford",
+  "mgr-crescent": "Reed Lawson"
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function percentChange(current: number, baseline: number) {
+  if (!baseline) return 0;
+  return ((current - baseline) / baseline) * 100;
+}
+
+function getExpenseMix(propertyType: Property["type"]) {
+  if (propertyType === "Retail") {
+    return [
+      { category: "CAM / recoverables", weight: 0.24 },
+      { category: "Repairs & maintenance", weight: 0.2 },
+      { category: "Contract services", weight: 0.18 },
+      { category: "Utilities", weight: 0.12 },
+      { category: "Administrative / professional", weight: 0.14 },
+      { category: "Marketing / leasing", weight: 0.12 }
+    ];
+  }
+
+  if (propertyType === "Office") {
+    return [
+      { category: "Contract services", weight: 0.23 },
+      { category: "Repairs & maintenance", weight: 0.19 },
+      { category: "Utilities", weight: 0.17 },
+      { category: "Administrative / professional", weight: 0.16 },
+      { category: "Security / janitorial", weight: 0.13 },
+      { category: "Leasing / tenant improvements", weight: 0.12 }
+    ];
+  }
+
+  if (propertyType === "Industrial") {
+    return [
+      { category: "Repairs & maintenance", weight: 0.22 },
+      { category: "Contract services", weight: 0.2 },
+      { category: "Utilities", weight: 0.16 },
+      { category: "Administrative / professional", weight: 0.15 },
+      { category: "Yard / logistics support", weight: 0.15 },
+      { category: "Brokerage / leasing", weight: 0.12 }
+    ];
+  }
+
+  return [
+    { category: "Repairs & maintenance", weight: 0.24 },
+    { category: "Payroll / site ops", weight: 0.18 },
+    { category: "Utilities", weight: 0.15 },
+    { category: "Contract services", weight: 0.16 },
+    { category: "Administrative / professional", weight: 0.14 },
+    { category: "Turns / leasing", weight: 0.13 }
+  ];
+}
+
+function deriveExpenseCategories(
+  property: Omit<Property, "slug" | "serviceProviderIds" | "scoreInputs" | "expenseCategories" | "oversightContacts">
+): ExpenseCategoryReview[] {
+  const latestExpense = (property.performance.at(-1)?.expenses ?? property.adminCosts / 1000) * 1000;
+  const priorExpense =
+    (property.performance.at(-2)?.expenses ?? property.performance.at(-1)?.expenses ?? property.adminCosts / 1000) *
+    1000;
+  const issuePressure = property.openIssues > 2 ? 0.08 : property.openIssues > 0 ? 0.03 : 0;
+  const budgetPressure = Math.max(0, -property.budgetVsActual) / 100;
+
+  return getExpenseMix(property.type).map((entry, index) => {
+    const current = latestExpense * (entry.weight + budgetPressure * (index === 0 ? 0.1 : 0.025));
+    const priorMonth = priorExpense * entry.weight;
+    const variancePercent = percentChange(current, priorMonth);
+    const tone: StatusTone =
+      variancePercent > 12 || (index === 0 && issuePressure > 0)
+        ? "alert"
+        : variancePercent > 6
+          ? "watch"
+          : "good";
+
+    return {
+      category: entry.category,
+      current,
+      priorMonth,
+      variancePercent,
+      tone,
+      review:
+        tone === "alert"
+          ? "Review invoice stack, coding support, and possible duplicate or miscoded billing."
+          : tone === "watch"
+            ? "Tie variance back to prior-period accruals and manager explanations."
+            : "Category remains in the normal operating band."
+    };
+  });
+}
+
+function deriveScoreInputs(
+  property: Omit<Property, "slug" | "serviceProviderIds" | "scoreInputs" | "expenseCategories" | "oversightContacts">
+): PropertyScoreInputs {
+  const latestRevenue = property.performance.at(-1)?.revenue ?? property.grossMonthlyRent / 1000;
+  const firstRevenue = property.performance[0]?.revenue ?? latestRevenue;
+  const latestNoi = property.performance.at(-1)?.noi ?? property.noi / 1000;
+  const firstNoi = property.performance[0]?.noi ?? latestNoi;
+  const latestExpense = (property.performance.at(-1)?.expenses ?? property.adminCosts / 1000) * 1000;
+  const currentVacancy = property.performance.at(-1)?.vacancyRate ?? Math.max(0, 100 - property.occupancy);
+  const projectPressure =
+    /delayed|over budget|decision/i.test(property.activeProjectStatus) ? 0.12 : 0.04;
+
+  const agedReceivablesAmount = property.grossMonthlyRent * ((property.delinquencies * 1.15) / 100);
+  const agedReceivablesDays = clamp(
+    Math.round(16 + property.delinquencies * 13 + Math.max(0, currentVacancy - 4) * 2),
+    14,
+    95
+  );
+  const agedPayablesAmount =
+    latestExpense * (0.18 + Math.max(0, -property.budgetVsActual) / 100 + projectPressure);
+  const agedPayablesDays = clamp(
+    Math.round(18 + Math.max(0, -property.budgetVsActual) * 3 + property.openIssues * 2 + projectPressure * 40),
+    14,
+    90
+  );
+
+  const leaseComplianceStatus: StatusTone =
+    property.managerReview.reportingTimeliness === "alert" ||
+    property.managerReview.rentGrowthExecution === "alert"
+      ? "alert"
+      : property.managerReview.reportingTimeliness === "watch" ||
+          property.managerReview.rentGrowthExecution === "watch"
+        ? "watch"
+        : "good";
+
+  const managementAgreementStatus: StatusTone =
+    property.managerReview.feeFairness === "alert" || property.managerReview.expenseDiscipline === "alert"
+      ? "alert"
+      : property.managerReview.feeFairness === "watch" || property.managerReview.expenseDiscipline === "watch"
+        ? "watch"
+        : "good";
+
+  return {
+    agedReceivablesAmount,
+    agedReceivablesDays,
+    agedPayablesAmount,
+    agedPayablesDays,
+    sameStoreRevenueChange: percentChange(latestRevenue, firstRevenue),
+    sameStoreNoiChange: percentChange(latestNoi, firstNoi),
+    leaseComplianceStatus,
+    leaseComplianceNotes:
+      property.type === "Retail"
+        ? "Lease compliance reflects CAM support, reconciliation timing, and recoverable coding quality."
+        : "Lease compliance reflects reporting timeliness, lease-file discipline, and renewal execution.",
+    managementAgreementStatus,
+    managementAgreementNotes:
+      property.managerReview.feeNotes || "Management agreement performance remains inside the expected range."
+  };
+}
+
+function deriveOversightContacts(
+  property: Omit<Property, "slug" | "serviceProviderIds" | "scoreInputs" | "expenseCategories" | "oversightContacts">,
+  managerName: string,
+  serviceProviderIds: string[]
+): OversightContact[] {
+  const lenderName =
+    providers.find((provider) => serviceProviderIds.includes(provider.id) && provider.type === "Lender")?.name ||
+    providers.find((provider) => serviceProviderIds.includes(provider.id) && provider.type === "Debt Broker")?.name ||
+    "Debt contact pending";
+  const specialistName =
+    providers.find((provider) =>
+      serviceProviderIds.includes(provider.id) &&
+      ["CAM Specialist", "CPA", "Attorney", "Insurance Advisor"].includes(provider.type)
+    )?.name || "Specialist under review";
+
+  return [
+    {
+      role: "Real estate fiduciary",
+      name: "Avery Bennett",
+      detail: "Trust Officer · final approvals, escalation, and reporting accountability."
+    },
+    {
+      role: "Asset oversight lead",
+      name: assetLeadByManager[property.managerId] ?? "Portfolio oversight lead",
+      detail: `Monthly operating report and health-score owner for ${property.market}.`
+    },
+    {
+      role: "Property manager",
+      name: managerName,
+      detail: `Primary management agreement for ${property.name}.`
+    },
+    {
+      role: "Debt / capital contact",
+      name: lenderName,
+      detail: "Debt, refinance, and capital-markets coordination."
+    },
+    {
+      role: "Specialist lead",
+      name: specialistName,
+      detail: "Lease, CAM, tax, legal, or insurance support."
+    }
+  ];
+}
 
 export const managers: Manager[] = [
   {
@@ -922,7 +1127,7 @@ const propertyBase = [
       feeNotes: "Request final fee normalization memo in May."
     }
   }
-] satisfies Omit<Property, "slug" | "serviceProviderIds">[];
+] satisfies Omit<Property, "slug" | "serviceProviderIds" | "scoreInputs" | "expenseCategories" | "oversightContacts">[];
 
 export const properties: Property[] = propertyBase.map((property, index) => {
   const defaultProviders =
@@ -940,13 +1145,21 @@ export const properties: Property[] = propertyBase.map((property, index) => {
           : property.id === "prop-canal"
             ? ["prov-cedar", "prov-aegis"]
             : property.id === "prop-ashton"
-              ? ["prov-lineage"]
+        ? ["prov-lineage"]
               : [];
+
+  const serviceProviderIds = Array.from(
+    new Set([...defaultProviders, ...specialistProviders, property.managerId])
+  );
+  const managerName = managers.find((manager) => manager.id === property.managerId)?.name ?? "Property manager";
 
   return {
     ...property,
     slug: slugify(property.name),
-    serviceProviderIds: Array.from(new Set([...defaultProviders, ...specialistProviders, property.managerId])),
+    serviceProviderIds,
+    scoreInputs: deriveScoreInputs(property),
+    expenseCategories: deriveExpenseCategories(property),
+    oversightContacts: deriveOversightContacts(property, managerName, serviceProviderIds),
     id: property.id ?? `property-${index}`
   };
 });

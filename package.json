@@ -18,6 +18,8 @@
     "db:push": "prisma db push",
     "db:seed:local": "SEED_TARGET=local tsx prisma/seed.ts",
     "db:seed": "tsx prisma/seed.ts",
+    "db:backfill:scoreboard:local": "BACKFILL_TARGET=local tsx prisma/backfill-property-score-inputs.ts",
+    "db:backfill:scoreboard": "tsx prisma/backfill-property-score-inputs.ts",
     "db:reset-demo-password": "bash scripts/reset-demo-password.sh",
     "db:export:seed-sql": "bash scripts/export-local-seed-sql.sh",
     "db:prepare": "npm run db:push && npm run db:seed",

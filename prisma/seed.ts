@@ -1,61 +1,13 @@
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaD1 } from "@prisma/adapter-d1";
-import { PrismaClient } from "@prisma/client";
 
 import { dataset } from "../lib/mock-data";
 import { hashPassword } from "../lib/server/password";
+import { createPrismaClient, getD1HttpParams } from "./runtime-client";
 
 const tenantId = "tenant-halcyon";
 const providerIds = new Set(dataset.providers.map((provider) => provider.id));
-
-function getD1HttpParams() {
-  const {
-    CLOUDFLARE_D1_TOKEN,
-    CLOUDFLARE_ACCOUNT_ID,
-    CLOUDFLARE_DATABASE_ID,
-    CLOUDFLARE_SHADOW_DATABASE_ID
-  } = process.env;
-
-  if (!CLOUDFLARE_D1_TOKEN || !CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_DATABASE_ID) {
-    return null;
-  }
-
-  return {
-    CLOUDFLARE_D1_TOKEN,
-    CLOUDFLARE_ACCOUNT_ID,
-    CLOUDFLARE_DATABASE_ID,
-    ...(CLOUDFLARE_SHADOW_DATABASE_ID
-      ? { CLOUDFLARE_SHADOW_DATABASE_ID }
-      : {})
-  };
-}
-
-function createPrismaClient() {
-  if (process.env.SEED_TARGET === "local") {
-    return new PrismaClient({
-      adapter: new PrismaBetterSqlite3({
-        url: process.env.DATABASE_URL ?? "file:./dev.db"
-      })
-    });
-  }
-
-  const d1HttpParams = getD1HttpParams();
-
-  if (d1HttpParams) {
-    return new PrismaClient({
-      adapter: new PrismaD1(d1HttpParams)
-    });
-  }
-
-  return new PrismaClient({
-    adapter: new PrismaBetterSqlite3({
-      url: process.env.DATABASE_URL ?? "file:./dev.db"
-    })
-  });
-}
-
-const prisma = createPrismaClient();
+const forceLocal = process.env.SEED_TARGET === "local";
+const prisma = createPrismaClient({ forceLocal });
 
 function requireEnv(name: "DEMO_USER_EMAIL" | "DEMO_USER_PASSWORD") {
   const value = process.env[name];
@@ -72,7 +24,7 @@ const demoUserPassword = requireEnv("DEMO_USER_PASSWORD");
 
 async function main() {
   console.log(
-    getD1HttpParams()
+    !forceLocal && getD1HttpParams()
       ? "Seeding Cloudflare D1 database via HTTP adapter..."
       : "Seeding local SQLite database..."
   );
@@ -173,6 +125,9 @@ async function main() {
         debtStatus: property.debtStatus,
         performanceJson: JSON.stringify(property.performance),
         managerReviewJson: JSON.stringify(property.managerReview),
+        scoreInputsJson: JSON.stringify(property.scoreInputs),
+        expenseCategoriesJson: JSON.stringify(property.expenseCategories),
+        oversightContactsJson: JSON.stringify(property.oversightContacts),
         renewalCount: property.renewalCount
       }
     });

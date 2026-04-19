@@ -11,8 +11,9 @@ import { RiskBadge, StatusIcon, ToneBadge } from "@/components/status-chip";
 import { StatCard } from "@/components/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPropertyScoreboard } from "@/lib/dashboard-scoreboard";
 import { getCurrentTenantDataset, getPropertyBySlug, getPropertyContext } from "@/lib/server/portfolio-service";
-import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
+import { formatCompactCurrency, formatCurrency, formatDate, formatPercent } from "@/lib/utils";
 
 const scorecardLabels = {
   reportingTimeliness: "Reporting timeliness",
@@ -36,6 +37,7 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
   const manager = dataset.managers.find((item) => item.id === property.managerId);
   const propertyProviders = dataset.providers.filter((provider) => provider.assignedPropertyIds.includes(property.id));
   const context = getPropertyContext(dataset, property.id);
+  const scoreboard = getPropertyScoreboard(dataset, property.id);
 
   return (
     <AppShell
@@ -65,6 +67,12 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
                 </div>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
+                <StatCard
+                  label="Health score"
+                  value={`${scoreboard.healthScore}`}
+                  delta={scoreboard.healthBand}
+                  tone={scoreboard.healthTone}
+                />
                 <StatCard label="Occupancy" value={formatPercent(property.occupancy)} tone={property.occupancy > 94 ? "good" : "watch"} />
                 <StatCard label="Leased %" value={formatPercent(property.leasedPercent)} />
                 <StatCard label="Average rent" value={property.type === "Multifamily" ? formatCurrency(property.averageRent) : `$${property.averageRent}/SF`} />
@@ -80,6 +88,38 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <div className="rounded-[1.75rem] border border-white/70 bg-primary p-6 text-primary-foreground shadow-soft">
               <div className="text-xs uppercase tracking-[0.22em] text-primary-foreground/70">Owner command center</div>
               <div className="mt-3 font-serif text-3xl">{property.summary}</div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-primary-foreground/70">Property health</div>
+                  <div className="mt-2 text-2xl font-semibold">
+                    {scoreboard.healthScore} · {scoreboard.healthBand}
+                  </div>
+                  <div className="mt-1 text-sm text-primary-foreground/75">{scoreboard.managementAgreementLabel}</div>
+                </div>
+                <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-primary-foreground/70">Same-store trend</div>
+                  <div className="mt-2 text-2xl font-semibold">
+                    {scoreboard.sameStorePerformance >= 0 ? "+" : ""}
+                    {scoreboard.sameStorePerformance.toFixed(1)}%
+                  </div>
+                  <div className="mt-1 text-sm text-primary-foreground/75">Persisted property score input</div>
+                </div>
+                <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-primary-foreground/70">Management agreement</div>
+                  <div className="mt-2 text-2xl font-semibold">
+                    {property.scoreInputs.managementAgreementStatus === "good"
+                      ? "Strong"
+                      : property.scoreInputs.managementAgreementStatus === "watch"
+                        ? "Watch"
+                        : property.scoreInputs.managementAgreementStatus === "alert"
+                          ? "Intervention"
+                          : "Stable"}
+                  </div>
+                  <div className="mt-1 text-sm text-primary-foreground/75">
+                    {property.scoreInputs.managementAgreementNotes}
+                  </div>
+                </div>
+              </div>
               <div className="mt-6 grid gap-4">
                 {property.nextActions.map((action) => (
                   <div key={action} className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4 text-sm">
@@ -91,8 +131,13 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="health">
           <TabsList>
+            <TabsTrigger value="health">Health Score</TabsTrigger>
+            <TabsTrigger value="mor">MOR</TabsTrigger>
+            <TabsTrigger value="diagnostics">Diagnostics</TabsTrigger>
+            <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="financials">Financials</TabsTrigger>
             <TabsTrigger value="operations">Leasing / Operations</TabsTrigger>
@@ -101,6 +146,325 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
             <TabsTrigger value="vendors">Vendors / Specialists</TabsTrigger>
             <TabsTrigger value="documents">Documents / Notes</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="health" className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+            <Card>
+              <CardHeader>
+                <CardTitle>Property health score</CardTitle>
+                <CardDescription>
+                  Credit-report-style score built from NOI, vacancy, receivables, payables, expense consistency, and lease stability.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Modeled score</div>
+                      <div className="mt-2 text-5xl font-semibold text-primary">{scoreboard.healthScore}</div>
+                    </div>
+                    <ToneBadge tone={scoreboard.healthTone} />
+                  </div>
+                  <div className="mt-3 text-sm text-muted-foreground">{scoreboard.healthSummary}</div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-[1rem] border border-border/60 bg-background/70 p-3">
+                      <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Same-store performance</div>
+                      <div className="mt-1 text-lg font-semibold text-foreground">
+                        {scoreboard.sameStorePerformance >= 0 ? "+" : ""}
+                        {scoreboard.sameStorePerformance.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="rounded-[1rem] border border-border/60 bg-background/70 p-3">
+                      <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Trailing 12-month NOI</div>
+                      <div className="mt-1 text-lg font-semibold text-foreground">
+                        {formatCompactCurrency(scoreboard.trailingTwelveNoi)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Same-store revenue</div>
+                    <div className="mt-2 text-2xl font-semibold text-primary">
+                      {property.scoreInputs.sameStoreRevenueChange >= 0 ? "+" : ""}
+                      {property.scoreInputs.sameStoreRevenueChange.toFixed(1)}%
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Persisted score input reflecting revenue movement across the same-store base.
+                    </div>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Same-store NOI</div>
+                    <div className="mt-2 text-2xl font-semibold text-primary">
+                      {property.scoreInputs.sameStoreNoiChange >= 0 ? "+" : ""}
+                      {property.scoreInputs.sameStoreNoiChange.toFixed(1)}%
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Used in the health score alongside vacancy, receivables, payables, and lease stability.
+                    </div>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Lease compliance</div>
+                      <ToneBadge tone={property.scoreInputs.leaseComplianceStatus} />
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {property.scoreInputs.leaseComplianceNotes}
+                    </div>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Management agreement</div>
+                      <ToneBadge tone={property.scoreInputs.managementAgreementStatus} />
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      {property.scoreInputs.managementAgreementNotes}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Score diagnostics</CardTitle>
+                <CardDescription>
+                  Factor-by-factor breakdown explaining why the property scored where it did.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {scoreboard.factors.map((factor) => (
+                  <div key={factor.key} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="font-medium text-foreground">{factor.label}</div>
+                        <div className="mt-1 text-sm text-muted-foreground">{factor.valueLabel}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-semibold text-primary">{factor.score}</div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                          {Math.round(factor.weight * 100)}% weight
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 h-2 rounded-full bg-secondary">
+                      <div
+                        className="h-2 rounded-full bg-primary"
+                        style={{ width: `${factor.score}%` }}
+                      />
+                    </div>
+                    <div className="mt-3 text-sm text-muted-foreground">{factor.detail}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="mor" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-5">
+              <StatCard label="Current NOI" value={formatCompactCurrency(scoreboard.monthlyOperatingReport.currentNoi)} />
+              <StatCard label="TTM NOI" value={formatCompactCurrency(scoreboard.monthlyOperatingReport.annualizedNoi)} detail="Annualized" />
+              <StatCard label="Vacancy" value={formatPercent(scoreboard.monthlyOperatingReport.vacancyRate)} tone={scoreboard.monthlyOperatingReport.vacancyRate > 8 ? "alert" : "watch"} />
+              <StatCard
+                label="Aged receivables"
+                value={formatCompactCurrency(scoreboard.monthlyOperatingReport.agedReceivablesAmount)}
+                detail={`${scoreboard.monthlyOperatingReport.agedReceivablesDays} days`}
+                tone={scoreboard.monthlyOperatingReport.agedReceivablesDays > 45 ? "alert" : "watch"}
+              />
+              <StatCard
+                label="Aged payables"
+                value={formatCompactCurrency(scoreboard.monthlyOperatingReport.agedPayablesAmount)}
+                detail={`${scoreboard.monthlyOperatingReport.agedPayablesDays} days`}
+                tone={scoreboard.monthlyOperatingReport.agedPayablesDays > 45 ? "alert" : "watch"}
+              />
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+              <Card>
+                <CardHeader>
+                  <CardTitle>General ledger summary</CardTitle>
+                  <CardDescription>
+                    Current month MOR rollup for revenue, expenses, NOI, and collections gap.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {scoreboard.monthlyOperatingReport.ledgerSummary.map((entry) => (
+                    <div key={entry.label} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-medium text-foreground">{entry.label}</div>
+                        <div className="text-lg font-semibold text-primary">{formatCurrency(entry.value)}</div>
+                      </div>
+                      <div className="mt-2 text-sm text-muted-foreground">{entry.detail}</div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Expense categorization</CardTitle>
+                  <CardDescription>
+                    Monthly operating review by category, prior-month comparison, and invoice-level follow-up guidance.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {scoreboard.monthlyOperatingReport.expenseCategories.map((category) => (
+                    <div key={category.category} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-medium text-foreground">{category.category}</div>
+                        <ToneBadge tone={category.tone} />
+                      </div>
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        Current {formatCurrency(category.current)} · prior month {formatCurrency(category.priorMonth)} · variance{" "}
+                        {category.variancePercent >= 0 ? "+" : ""}
+                        {category.variancePercent.toFixed(1)}%
+                      </div>
+                      <div className="mt-2 text-sm text-muted-foreground">{category.review}</div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="diagnostics" className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Financial and audit diagnostics</CardTitle>
+                  <CardDescription>
+                    General-ledger analysis, duplicate-invoice screening, AP/AR review, and exception detection.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {scoreboard.diagnostics.findings.map((finding) => (
+                    <div key={finding.title} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-medium text-foreground">{finding.title}</div>
+                        <ToneBadge tone={finding.tone} />
+                      </div>
+                      <div className="mt-2 text-sm text-muted-foreground">{finding.detail}</div>
+                      <div className="mt-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                        {finding.timeframe}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Period comparisons</CardTitle>
+                  <CardDescription>
+                    Prior-month, quarterly, and trailing analysis to support owner review and close questions.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
+                  <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Prior month</div>
+                    <div className="mt-2 text-2xl font-semibold text-primary">
+                      {scoreboard.diagnostics.priorMonthChange >= 0 ? "+" : ""}
+                      {scoreboard.diagnostics.priorMonthChange.toFixed(1)}%
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Month-over-month NOI direction for the latest reporting cycle.
+                    </div>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Quarterly review</div>
+                    <div className="mt-2 text-2xl font-semibold text-primary">
+                      {scoreboard.diagnostics.quarterlyChange >= 0 ? "+" : ""}
+                      {scoreboard.diagnostics.quarterlyChange.toFixed(1)}%
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Current NOI versus trailing quarterly operating context.
+                    </div>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Trailing analysis</div>
+                    <div className="mt-2 text-2xl font-semibold text-primary">
+                      {scoreboard.diagnostics.trailingTwelveChange >= 0 ? "+" : ""}
+                      {scoreboard.diagnostics.trailingTwelveChange.toFixed(1)}%
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Modeled same-store performance direction across the reporting history.
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="services" className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Operational and lease oversight</CardTitle>
+                  <CardDescription>
+                    Lease audits, CAM or budget review, and management contract oversight with clear ownership.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {scoreboard.oversight.map((review) => (
+                    <div key={review.title} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-medium text-foreground">{review.title}</div>
+                        <ToneBadge tone={review.tone} />
+                      </div>
+                      <div className="mt-2 text-sm text-muted-foreground">{review.detail}</div>
+                      <div className="mt-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                        Owner: {review.owner}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Advanced services / interventions</CardTitle>
+                  <CardDescription>
+                    Disposition planning, wind-down readiness, and specialized financial or operational reviews.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {scoreboard.services.map((service) => (
+                    <div key={service.title} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-medium text-foreground">{service.title}</div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                          {service.urgency}
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm text-muted-foreground">{service.detail}</div>
+                      <div className="mt-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                        Owner: {service.owner}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="contacts" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Contact and oversight layer</CardTitle>
+                <CardDescription>
+                  Real estate fiduciary, stakeholders, and clear accountability for this property.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {scoreboard.contacts.map((contact) => (
+                  <div key={contact.role} className="rounded-[1.25rem] border border-border/70 bg-white/70 p-4">
+                    <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{contact.role}</div>
+                    <div className="mt-2 text-lg font-semibold text-primary">{contact.name}</div>
+                    <div className="mt-2 text-sm text-muted-foreground">{contact.detail}</div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="overview" className="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
             <Card>

@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { PortfolioOverviewContent } from "@/components/portfolio-overview-content";
 import { Button } from "@/components/ui/button";
+import { getPortfolioScoreboard } from "@/lib/dashboard-scoreboard";
 import { getCurrentTenantDataset, getPortfolioChart, getPortfolioSummary } from "@/lib/server/portfolio-service";
 
 export default async function DashboardPage() {
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
     ...entry,
     avgOccupancy: entry.avgOccupancy / entry.properties
   }));
+  const scoreboard = getPortfolioScoreboard(dataset);
 
   return (
     <AppShell
@@ -52,6 +54,7 @@ export default async function DashboardPage() {
     >
       <PortfolioOverviewContent
         dataset={dataset}
+        scoreboard={scoreboard}
         portfolioChart={portfolioChart}
         portfolioSummary={portfolioSummary}
         topIssues={topIssues}

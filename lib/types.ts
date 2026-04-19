@@ -96,6 +96,34 @@ export interface ManagerScorecard {
   feeNotes: string;
 }
 
+export interface PropertyScoreInputs {
+  agedReceivablesAmount: number;
+  agedReceivablesDays: number;
+  agedPayablesAmount: number;
+  agedPayablesDays: number;
+  sameStoreRevenueChange: number;
+  sameStoreNoiChange: number;
+  leaseComplianceStatus: StatusTone;
+  leaseComplianceNotes: string;
+  managementAgreementStatus: StatusTone;
+  managementAgreementNotes: string;
+}
+
+export interface ExpenseCategoryReview {
+  category: string;
+  current: number;
+  priorMonth: number;
+  variancePercent: number;
+  tone: StatusTone;
+  review: string;
+}
+
+export interface OversightContact {
+  role: string;
+  name: string;
+  detail: string;
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -166,6 +194,9 @@ export interface Property {
   serviceProviderIds: string[];
   performance: TimePoint[];
   managerReview: ManagerScorecard;
+  scoreInputs: PropertyScoreInputs;
+  expenseCategories: ExpenseCategoryReview[];
+  oversightContacts: OversightContact[];
   renewalCount: number;
 }
 

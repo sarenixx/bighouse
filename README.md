@@ -58,6 +58,8 @@ Amseta is a Next.js 16 portfolio-oversight demo with a branded public landing pa
 - `npm run db:push`: apply the Prisma schema to local SQLite
 - `npm run db:seed`: seed local SQLite or remote D1 depending on environment variables
 - `npm run db:seed:local`: force local SQLite seeding
+- `npm run db:backfill:scoreboard`: backfill missing property scoreboard JSON fields in local SQLite or remote D1 depending on environment variables
+- `npm run db:backfill:scoreboard:local`: force the property scoreboard backfill against local SQLite
 - `npm run cf-typegen`: regenerate `cloudflare-env.d.ts`
 - `npm run preview`: build for Cloudflare and preview locally
 - `npm run deploy`: build for Cloudflare and deploy
@@ -148,7 +150,7 @@ For normal follow-up releases after the environment has already been seeded, run
 npm run release:cloudflare
 ```
 
-That script runs the local validation gates, checks Wrangler auth, applies any new schema migrations, deploys the Worker, and then prints the post-deploy smoke checks. It does not reseed production data.
+That script runs the local validation gates, checks Wrangler auth, applies any new schema migrations, backfills any missing property scoreboard JSON fields on remote D1, deploys the Worker, and then prints the post-deploy smoke checks. It does not reseed production data. Make sure `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_DATABASE_ID`, and `CLOUDFLARE_D1_TOKEN` are still exported in the shell before you run it.
 
 ## Custom domain
 
@@ -166,6 +168,7 @@ After deployment:
 
 - `lib/server/prisma.ts` switches between `better-sqlite3` and `@prisma/adapter-d1` at runtime.
 - `prisma/seed.ts` can seed local SQLite or remote D1 with the same dataset, but it is intentionally a bootstrap tool rather than part of the normal release path.
+- `prisma/backfill-property-score-inputs.ts` is an idempotent maintenance script that fills only missing property scoreboard JSON fields unless you pass `--force` or set `BACKFILL_SCOREBOARD_FORCE=1`.
 - Production rate limiting now prefers the existing Cloudflare D1 binding for shared counters, falls back to Redis when configured outside the Worker runtime, and uses local memory only for development and tests.
 - `middleware.ts` is intentionally kept even though Next.js 16 warns that `proxy.ts` is the newer convention. In this repo, the OpenNext Cloudflare build currently succeeds with `middleware.ts` and fails with `proxy.ts`.
 - Generated Cloudflare build output lives under `.open-next/` and Wrangler state may appear under `.wrangler/`.

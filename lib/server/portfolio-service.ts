@@ -6,11 +6,14 @@ import path from "node:path";
 import type {
   CapexProject,
   DocumentRecord,
+  ExpenseCategoryReview,
   Issue,
   Manager,
   ManagerScorecard,
+  OversightContact,
   PortfolioDataset,
   Property,
+  PropertyScoreInputs,
   Provider,
   TaskItem,
   TimePoint,
@@ -80,6 +83,9 @@ function mapProperty(record: PropertyRecord): Property {
     serviceProviderIds: record.providerLinks.map((link) => link.providerId),
     performance: parseJson<TimePoint[]>(record.performanceJson),
     managerReview: parseJson<ManagerScorecard>(record.managerReviewJson),
+    scoreInputs: parseJson<PropertyScoreInputs>(record.scoreInputsJson),
+    expenseCategories: parseJson<ExpenseCategoryReview[]>(record.expenseCategoriesJson),
+    oversightContacts: parseJson<OversightContact[]>(record.oversightContactsJson),
     renewalCount: record.renewalCount
   };
 }
