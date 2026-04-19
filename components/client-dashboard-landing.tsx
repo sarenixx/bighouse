@@ -226,18 +226,18 @@ export function ClientDashboardLandingPage({
         className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 pb-16 pt-[124px] text-center sm:px-6 sm:pb-24 sm:pt-[140px]"
       >
         <div className="animate-float-up mb-6 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-md sm:mb-8 sm:text-xs sm:tracking-[0.28em]">
-          Amseta | Real Estate Fiduciary Oversight
+          Independent Real Estate Fiduciary Oversight
         </div>
         <h1 className="animate-float-up max-w-[760px] text-[42px] font-semibold leading-[1.02] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:leading-[1.05] sm:tracking-[-0.04em]">
-          <span className="text-zinc-700">The fiduciary layer</span>
+          <span className="text-zinc-700">Independent fiduciary</span>
           <br />
-          for long-term
+          oversight for
           <br />
           real estate ownership
         </h1>
         <p className="animate-float-up-delay mt-6 max-w-[620px] text-base leading-relaxed text-zinc-800 sm:mt-8 sm:text-lg">
-          Amseta serves real estate owners, passive investors, family offices, and high-net-worth
-          individuals with independent oversight, accountability, and clarity across every property.
+          Amseta represents owners, passive investors, family offices, and high-net-worth
+          individuals with one objective: clear truth across every property, manager, and report.
         </p>
         <div className="animate-float-up-delay-2 mt-8 flex w-full max-w-xl flex-col justify-center gap-3 sm:flex-row sm:gap-4">
           {publicMode ? (
@@ -259,8 +259,7 @@ export function ClientDashboardLandingPage({
           <div className="mx-auto flex max-w-[620px] items-center gap-3 rounded-[20px] border border-black/10 bg-white/55 px-4 py-4 text-left shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-md sm:max-w-none sm:gap-4 sm:px-6">
             <Logo className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
             <span className="text-sm font-medium leading-relaxed text-zinc-900">
-              We do not serve fiduciaries. We are the fiduciary layer: an independent umpire for
-              portfolio truth.
+              We are not the operator. We are the independent fiduciary umpire for portfolio truth.
             </span>
             <svg viewBox="0 0 48 48" className="ml-auto h-6 w-6 shrink-0 sm:h-7 sm:w-7" aria-hidden="true">
               <defs>
@@ -348,13 +347,13 @@ export function ClientDashboardLandingPage({
             </div>
 
             <h2 className="mb-8 text-[40px] font-semibold leading-[1.05] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:tracking-[-0.04em]">
-              Property Scorecard <br /> <span className="text-zinc-700">for every asset</span>
+              Property Scorecard <br /> <span className="text-zinc-700">monthly clarity for each asset</span>
             </h2>
             <p className="mb-8 max-w-lg text-base leading-relaxed text-zinc-800 sm:mb-10 sm:text-lg">
-              The Property Scorecard is a monthly fiduciary report that gives each property a clear
-              diagnostic view, similar to how a credit score summarizes financial health. It
-              consolidates financial reporting, property activity, capital planning, and manager
-              performance into one ownership-facing signal.
+              The Property Scorecard is Amseta&apos;s monthly diagnostic report for every property.
+              Like a credit score for real estate ownership, it distills financial reporting,
+              operating activity, capital planning, and manager performance into a single,
+              decision-ready signal.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
               <a
@@ -380,15 +379,15 @@ export function ClientDashboardLandingPage({
             >
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))]" />
               <div className="absolute inset-x-4 top-4 z-20 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-md sm:inset-x-8 sm:top-8 sm:text-xs sm:tracking-[0.26em]">
-                Example monthly report
+                Sample monthly report
               </div>
               <div className="absolute inset-x-4 bottom-4 z-20 rounded-[20px] border border-black/10 bg-white/65 px-4 py-4 backdrop-blur-md sm:inset-x-8 sm:bottom-8 sm:rounded-[24px] sm:px-6 sm:py-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-600 sm:text-xs sm:tracking-[0.26em]">
-                  Property scorecard snapshot
+                  Ownership scorecard snapshot
                 </div>
                 <div className="mt-2 text-base font-medium leading-relaxed text-zinc-950 sm:text-lg">
-                  Diagnostic view combining financial review, operations, and manager
-                  accountability.
+                  One monthly snapshot of financial health, operational drift, and accountability
+                  signals.
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-700 sm:text-sm">
                   <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
