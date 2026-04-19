@@ -7,6 +7,7 @@ import { createIssueForCurrentTenant } from "@/lib/server/portfolio-service";
 
 const createIssueSchema = z.object({
   propertyId: z.string().min(1),
+  propertySlug: z.string().min(1).optional(),
   title: z.string().min(3),
   detail: z.string().min(8),
   severity: z.enum(["low", "moderate", "elevated", "critical"]),
@@ -28,7 +29,10 @@ export async function POST(request: Request) {
     await createIssueForCurrentTenant(parsed.data);
     revalidatePath("/");
     revalidatePath("/properties");
-    revalidatePath(`/properties/${payload.propertySlug ?? ""}`);
+
+    if (parsed.data.propertySlug) {
+      revalidatePath(`/properties/${parsed.data.propertySlug}`);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

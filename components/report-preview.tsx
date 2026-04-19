@@ -49,7 +49,7 @@ export function ReportPreview({
             </div>
             <div className="space-y-2 text-sm text-primary-foreground/80">
               <div>{dateRange}</div>
-              <div>Prepared by BigHouse Oversight</div>
+              <div>Prepared by Amseta Oversight</div>
             </div>
           </div>
         </div>

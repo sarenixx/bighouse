@@ -229,7 +229,7 @@ Final validation evidence:
     $ npm run db:push && npm run db:seed
 
     $ curl -i -c /tmp/bh_cookies.txt -H 'Content-Type: application/json' \
-      -d '{"email":"trustee@halcyonfamilyoffice.com","password":"bighouse-demo"}' \
+      -d '{"email":"trustee@halcyonfamilyoffice.com","password":"amseta-demo"}' \
       http://localhost:3000/api/auth/login
     HTTP/1.1 200 OK
     set-cookie: bh_session=...

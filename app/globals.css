@@ -1,6 +1,13 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
 
 :root {
   --background: 38 24% 96%;
@@ -21,12 +28,13 @@
   --success: 145 24% 36%;
   --warning: 39 56% 46%;
   --danger: 8 55% 44%;
-  --font-sans: "Instrument Sans";
-  --font-serif: "Newsreader";
+  --font-sans: "Inter";
+  --font-serif: "Inter";
 }
 
 * {
   border-color: hsl(var(--border));
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
@@ -49,7 +57,75 @@ a {
 }
 
 ::selection {
-  background: rgba(69, 98, 111, 0.18);
+  background: rgba(245, 158, 11, 0.3);
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-float-up {
+  animation: float-up 0.8s ease-out forwards;
+}
+
+.animate-float-up-delay {
+  opacity: 0;
+  animation: float-up 0.8s ease-out 0.2s forwards;
+}
+
+.animate-float-up-delay-2 {
+  opacity: 0;
+  animation: float-up 0.8s ease-out 0.4s forwards;
+}
+
+.animate-float-up-delay-3 {
+  opacity: 0;
+  animation: float-up 0.8s ease-out 0.6s forwards;
+}
+
+.spin-ring {
+  transform-origin: center;
+  animation: spin-ring 1.4s linear infinite;
+}
+
+.gradient-border-btn {
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+  background: transparent;
+}
+
+.gradient-border-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 1.5px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #F59E0B, #3B82F6);
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
 }
 
 .data-grid {

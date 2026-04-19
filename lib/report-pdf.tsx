@@ -161,7 +161,7 @@ function ReportFooter({ title }: { title: string }) {
 
 function ReportPdfDocument({ report }: { report: ReportDefinition }) {
   return (
-    <Document title={report.title} author="BigHouse Oversight" subject={report.subtitle}>
+    <Document title={report.title} author="Amseta Oversight" subject={report.subtitle}>
       <Page size="LETTER" style={styles.page}>
         <View style={styles.coverBand}>
           <Text style={styles.eyebrow}>{report.audience}</Text>

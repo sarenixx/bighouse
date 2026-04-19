@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { prisma } from "@/lib/server/prisma";
+import { getPrisma } from "@/lib/server/prisma";
 import { verifyPassword } from "@/lib/server/password";
 import {
   getNextFailedLoginState,
@@ -13,6 +13,7 @@ import {
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "bh_session";
 
 export async function signIn(email: string, password: string) {
+  const prisma = await getPrisma();
   const user = await prisma.user.findUnique({
     where: { email },
     include: { tenant: true }
@@ -96,6 +97,7 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function signOut() {
+  const prisma = await getPrisma();
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
 
@@ -107,6 +109,7 @@ export async function signOut() {
 }
 
 export async function getCurrentSession() {
+  const prisma = await getPrisma();
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
 

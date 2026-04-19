@@ -9,7 +9,7 @@ async function login(page: Parameters<typeof test>[0]["page"], password = demoPa
   await page.getByTestId("login-email").fill(demoEmail);
   await page.getByTestId("login-password").fill(password);
   await page.getByTestId("login-submit").click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 }
 
 test.describe.serial("auth flow", () => {

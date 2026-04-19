@@ -23,7 +23,7 @@ export default async function LoginPage({
         <Card className="data-grid relative overflow-hidden rounded-[2.25rem] border-white/70">
           <CardContent className="flex h-full flex-col justify-between p-8 lg:p-10">
             <div>
-              <div className="text-xs uppercase tracking-[0.28em] text-muted-foreground">BigHouse Oversight</div>
+              <div className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Amseta Oversight</div>
               <h1 className="mt-6 max-w-2xl font-serif text-5xl leading-tight tracking-tight text-primary lg:text-6xl">
                 Private portfolio oversight for owners who already have operators.
               </h1>

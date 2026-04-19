@@ -1,18 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const findFirst = vi.fn();
+const getPrisma = vi.fn();
 
 vi.mock("@/lib/server/prisma", () => ({
-  prisma: {
-    property: {
-      findFirst
-    }
-  }
+  getPrisma
 }));
 
 describe("requireTenantPropertyAccess", () => {
   beforeEach(() => {
     findFirst.mockReset();
+    getPrisma.mockReset();
+    getPrisma.mockResolvedValue({
+      property: {
+        findFirst
+      }
+    });
   });
 
   it("returns the property when the tenant owns it", async () => {

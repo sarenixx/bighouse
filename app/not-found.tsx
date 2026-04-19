@@ -13,7 +13,7 @@ export default function NotFound() {
             This mockup includes seeded routes for the demo portfolio. If you followed a stale link, return to the overview and continue from there.
           </p>
           <Button asChild>
-            <Link href="/">Return to overview</Link>
+            <Link href="/dashboard">Return to overview</Link>
           </Button>
         </CardContent>
       </Card>

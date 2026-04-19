@@ -1322,7 +1322,7 @@ export const documents: DocumentRecord[] = [
     title: "Q2 Trustee Oversight Summary",
     updatedAt: "2026-04-15",
     status: "Current",
-    source: "BigHouse Oversight"
+    source: "Amseta Oversight"
   },
   {
     id: "doc-8",
@@ -1349,7 +1349,7 @@ export const documents: DocumentRecord[] = [
     title: "Westover Fee Exception Note",
     updatedAt: "2026-04-16",
     status: "Current",
-    source: "BigHouse Oversight"
+    source: "Amseta Oversight"
   }
 ];
 

@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { label: "Portfolio Overview", href: "/", icon: LayoutDashboard },
+  { label: "Portfolio Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Properties", href: "/properties", icon: Building2 },
   { label: "Managers / Vendors", href: "/managers", icon: Users2 },
   { label: "Tasks & Reviews", href: "/tasks", icon: ShieldCheck },
@@ -50,7 +50,7 @@ export function AppShell({
             <div className="space-y-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.28em] text-muted-foreground">BigHouse</div>
+                  <div className="text-xs uppercase tracking-[0.28em] text-muted-foreground">Amseta</div>
                   <div className="mt-2 font-serif text-2xl text-primary">Oversight</div>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Trust, but verify across managers, lenders, and specialists.

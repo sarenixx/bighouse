@@ -1,0 +1,3 @@
+SESSION_COOKIE_NAME="amseta_session"
+REDIS_URL=""
+RATE_LIMIT_REDIS_PREFIX="amseta:rate-limit"

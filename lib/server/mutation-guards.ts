@@ -1,10 +1,11 @@
-import { prisma } from "@/lib/server/prisma";
+import { getPrisma } from "@/lib/server/prisma";
 import { AppRouteError } from "@/lib/server/app-route-error";
 
 export async function requireTenantPropertyAccess(args: {
   tenantId: string;
   propertyId: string;
 }) {
+  const prisma = await getPrisma();
   const property = await prisma.property.findFirst({
     where: {
       id: args.propertyId,

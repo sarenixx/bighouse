@@ -1,22 +1,33 @@
 {
-  "name": "bighouse",
+  "name": "amseta",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:seed:local": "SEED_TARGET=local tsx prisma/seed.ts",
     "db:seed": "tsx prisma/seed.ts",
-    "db:prepare": "npm run db:push && npm run db:seed"
+    "db:reset-demo-password": "bash scripts/reset-demo-password.sh",
+    "db:export:seed-sql": "bash scripts/export-local-seed-sql.sh",
+    "db:prepare": "npm run db:push && npm run db:seed",
+    "bootstrap:cloudflare": "bash scripts/bootstrap-cloudflare.sh",
+    "release:cloudflare": "bash scripts/deploy-cloudflare.sh"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.19.1",
     "@prisma/adapter-better-sqlite3": "^7.7.0",
+    "@prisma/adapter-d1": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-slot": "^1.2.3",
@@ -26,6 +37,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "lucide-react": "^0.542.0",
+    "motion": "^12.38.0",
     "next": "^16.2.4",
     "prisma": "^7.7.0",
     "react": "^19.2.0",
@@ -36,11 +48,11 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.6.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "@playwright/test": "^1.55.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.2.4",
@@ -48,6 +60,7 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wrangler": "^4.83.0"
   }
 }

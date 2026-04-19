@@ -36,7 +36,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 
       // Use a full navigation so the new session cookie is definitely present
       // before protected dashboard routes are evaluated.
-      window.location.assign(redirectTo ?? "/");
+      window.location.assign(redirectTo ?? "/dashboard");
     } catch {
       setError("Unable to sign in.");
       setIsSubmitting(false);

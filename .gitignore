@@ -10,6 +10,9 @@ npm-debug.log*
 dev.db
 dev.db-journal
 .env
+.dev.vars
 generated
 public/uploads/*
 !public/uploads/.gitkeep
+.open-next
+.wrangler

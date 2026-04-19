@@ -4,6 +4,7 @@ const cookieGet = vi.fn();
 const cookieDelete = vi.fn();
 const findUnique = vi.fn();
 const deleteSession = vi.fn();
+const getPrisma = vi.fn();
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(async () => ({
@@ -13,12 +14,7 @@ vi.mock("next/headers", () => ({
 }));
 
 vi.mock("@/lib/server/prisma", () => ({
-  prisma: {
-    session: {
-      findUnique,
-      delete: deleteSession
-    }
-  }
+  getPrisma
 }));
 
 describe("getCurrentSession", () => {
@@ -28,6 +24,13 @@ describe("getCurrentSession", () => {
     cookieDelete.mockReset();
     findUnique.mockReset();
     deleteSession.mockReset();
+    getPrisma.mockReset();
+    getPrisma.mockResolvedValue({
+      session: {
+        findUnique,
+        delete: deleteSession
+      }
+    });
   });
 
   it("returns null for an expired session without mutating cookies during render", async () => {

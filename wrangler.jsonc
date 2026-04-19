@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "amseta",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-04-18",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "vars": {
+    "SESSION_COOKIE_NAME": "amseta_session"
+  },
+  "routes": [
+    {
+      "pattern": "amseta.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.amseta.com",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "amseta"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "amseta-prod",
+      "database_id": "bc02ba01-f82d-4ff6-a773-20a9e75831cb"
+    }
+  ]
+}

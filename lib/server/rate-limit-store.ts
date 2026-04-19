@@ -1,5 +1,3 @@
-import { createClient } from "redis";
-
 type MemoryBucket = {
   count: number;
   resetAt: number;
@@ -24,13 +22,16 @@ export type RateLimitResult = {
 };
 
 const redisUrl = process.env.REDIS_URL?.trim();
-const redisPrefix = process.env.RATE_LIMIT_REDIS_PREFIX?.trim() || "bighouse:rate-limit";
+const redisPrefix = process.env.RATE_LIMIT_REDIS_PREFIX?.trim() || "amseta:rate-limit";
 const memoryBuckets = new Map<string, MemoryBucket>();
 
-type ConnectedRedisClient = Awaited<ReturnType<ReturnType<typeof createClient>["connect"]>>;
+type RedisModule = typeof import("redis");
+type RedisCreateClient = RedisModule["createClient"];
+type ConnectedRedisClient = Awaited<ReturnType<ReturnType<RedisCreateClient>["connect"]>>;
 
 let redisClient: ConnectedRedisClient | null = null;
 let redisConnectPromise: Promise<ConnectedRedisClient> | null = null;
+let redisModulePromise: Promise<RedisModule> | null = null;
 
 const consumeScript = `
 local current = redis.call("INCR", KEYS[1])
@@ -87,6 +88,8 @@ async function getRedisClient() {
     return redisConnectPromise;
   }
 
+  redisModulePromise ??= import("redis");
+  const { createClient } = await redisModulePromise;
   const client = createClient({ url: redisUrl });
   redisConnectPromise = client.connect().then(() => {
     redisClient = client;

@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -16,7 +16,7 @@ import type {
   TimePoint,
   TimelineNote
 } from "@/lib/types";
-import { prisma } from "@/lib/server/prisma";
+import { getPrisma, isCloudflareRuntime } from "@/lib/server/prisma";
 import { requireSession } from "@/lib/server/auth";
 import { AppRouteError } from "@/lib/server/app-route-error";
 import {
@@ -170,6 +170,7 @@ function mapNote(record: Prisma.TimelineNoteGetPayload<object>): TimelineNote {
 }
 
 export async function getTenantDataset(tenantId: string): Promise<PortfolioDataset> {
+  const prisma = await getPrisma();
   const [properties, managers, providers, issues, tasks, projects, documents, notes] = await Promise.all([
     prisma.property.findMany({
       where: { tenantId },
@@ -292,6 +293,7 @@ export async function createIssueForCurrentTenant(input: {
   dueDate: string;
   status: Issue["status"];
 }) {
+  const prisma = await getPrisma();
   const session = await requireSession();
   await requireTenantPropertyAccess({
     tenantId: session.tenantId,
@@ -318,6 +320,7 @@ export async function updateIssueForCurrentTenant(
   issueId: string,
   patch: Partial<Pick<Issue, "status" | "severity" | "owner" | "dueDate" | "detail" | "title">>
 ) {
+  const prisma = await getPrisma();
   const session = await requireSession();
   const result = await prisma.issue.updateMany({
     where: { id: issueId, tenantId: session.tenantId },
@@ -339,6 +342,7 @@ export async function updateTaskForCurrentTenant(
   taskId: string,
   patch: Partial<Pick<TaskItem, "status" | "owner" | "dueDate" | "decisionNeeded">>
 ) {
+  const prisma = await getPrisma();
   const session = await requireSession();
   const result = await prisma.taskItem.updateMany({
     where: { id: taskId, tenantId: session.tenantId },
@@ -360,6 +364,7 @@ export async function updateManagerReviewForCurrentTenant(input: {
   feeNotes?: string;
   annualSiteVisitComplete?: boolean;
 }) {
+  const prisma = await getPrisma();
   const session = await requireSession();
   const property = await requireTenantPropertyAccess({
     tenantId: session.tenantId,
@@ -402,6 +407,7 @@ export async function createTimelineNoteForCurrentTenant(input: {
   label: string;
   note: string;
 }) {
+  const prisma = await getPrisma();
   const session = await requireSession();
   await requireTenantPropertyAccess({
     tenantId: session.tenantId,
@@ -429,6 +435,7 @@ export async function createDocumentForCurrentTenant(input: {
   source: string;
   file?: File;
 }) {
+  const prisma = await getPrisma();
   const session = await requireSession();
   let fileUrl: string | undefined;
   let mimeType: string | undefined;
@@ -442,6 +449,13 @@ export async function createDocumentForCurrentTenant(input: {
   }
 
   if (input.file && input.file.size > 0) {
+    if (await isCloudflareRuntime()) {
+      throw new AppRouteError("File uploads are not configured for the Cloudflare deployment yet.", {
+        status: 501,
+        code: "upload_storage_not_configured"
+      });
+    }
+
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
     await mkdir(uploadsDir, { recursive: true });
     const upload = validateUploadFile(input.file);
