@@ -1,28 +1,64 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Cpu, FileText, Globe, Layers, Lock, ShieldCheck, Zap } from "lucide-react";
+import { BarChart3, Cpu, FileText, Globe, Layers, ShieldCheck, Zap } from "lucide-react";
 import { motion } from "motion/react";
 
 const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260302_085640_276ea93b-d7da-4418-a09b-2aa5b490e838.mp4";
 
+const primaryNavLinks = [
+  { label: "About", href: "#about" },
+  { label: "Team", href: "#team" },
+  { label: "Who We Serve", href: "#who-we-serve" },
+  { label: "Additional Services", href: "#additional-services" }
+];
+
 const footerColumns = [
   {
     title: "Platform",
-    links: ["Services", "How We Work", "Client Dashboard"]
+    links: [
+      { label: "Property Scorecard", href: "#property-scorecard" },
+      { label: "View Example Report", href: "#example-report" },
+      { label: "Platform Login", href: "/login" }
+    ]
   },
   {
     title: "Company",
-    links: ["About Us", "Careers", "Contact"]
+    links: [
+      { label: "About", href: "#about" },
+      { label: "Team", href: "#team" },
+      { label: "Who We Serve", href: "#who-we-serve" }
+    ]
   },
   {
     title: "Legal",
-    links: ["Privacy", "Terms", "Cookies"]
+    links: [
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Cookies", href: "#" }
+    ]
   }
 ];
 
-const iconCards = [Cpu, Layers, Zap, Globe, Lock];
+const teamCards = [
+  {
+    title: "Fiduciary Oversight",
+    description: "We act as the independent umpire between ownership goals and operating reality.",
+    icon: ShieldCheck
+  },
+  {
+    title: "Financial Review",
+    description: "Monthly financial and activity reviews identify drift early and keep decisions grounded.",
+    icon: FileText
+  },
+  {
+    title: "Operational Accountability",
+    description:
+      "Manager and operator performance is tracked against expectations, not presentation quality.",
+    icon: Cpu
+  }
+];
 
 function Logo({
   className = "h-7 w-7",
@@ -147,58 +183,84 @@ export function ClientDashboardLandingPage({
       </div>
 
       <nav className="fixed left-0 right-0 top-0 z-50 flex justify-center px-4 pt-4 sm:px-6 sm:pt-6">
-        <div className="flex w-full max-w-max items-center justify-between gap-3 rounded-full border border-black/10 bg-white/60 px-4 py-2.5 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:gap-8 sm:px-6">
-          <Logo className="h-6 w-6 sm:h-7 sm:w-7" />
-          <div className="hidden items-center gap-6 md:flex">
-            <a href="#services" className="text-sm font-medium text-zinc-700 transition-colors duration-150 hover:text-zinc-950">
-              Services
-            </a>
-            <a href="#how-we-work" className="text-sm font-medium text-zinc-700 transition-colors duration-150 hover:text-zinc-950">
-              How We Work
-            </a>
-            <a href="#about-us" className="text-sm font-medium text-zinc-700 transition-colors duration-150 hover:text-zinc-950">
-              About Us
+        <div className="flex w-full max-w-7xl items-center justify-between gap-3 rounded-full border border-black/10 bg-white/60 px-4 py-2.5 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:gap-8 sm:px-6">
+          <div className="flex items-center gap-4 sm:gap-8">
+            <Logo className="h-6 w-6 sm:h-7 sm:w-7" />
+            <div className="hidden items-center gap-6 md:flex">
+              {primaryNavLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  className="text-sm font-medium text-zinc-700 transition-colors duration-150 hover:text-zinc-950"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          </div>
+          <div className="hidden items-center gap-5 md:flex">
+            <a href="/login" className="text-sm font-semibold text-zinc-800 transition-colors hover:text-zinc-950">
+              Login
             </a>
             <a
-              href={publicMode ? "/login" : "#client-dashboard"}
-              className="text-sm font-medium text-zinc-700 transition-colors duration-150 hover:text-zinc-950"
+              href="mailto:hello@amseta.com"
+              className="text-sm font-semibold text-zinc-800 transition-colors hover:text-zinc-950"
             >
-              Client Dashboard
+              Contact Us
             </a>
           </div>
-          {publicMode ? (
-            <GradientBorderButton href="/login" className="px-4 py-2 text-xs sm:px-5 sm:text-sm">
-              Client login
-            </GradientBorderButton>
-          ) : (
-            <GradientBorderButton className="px-4 py-2 text-xs sm:px-5 sm:text-sm">Client login</GradientBorderButton>
-          )}
+          <div className="md:hidden">
+            {publicMode ? (
+              <GradientBorderButton href="/login" className="px-4 py-2 text-xs sm:px-5 sm:text-sm">
+                Login
+              </GradientBorderButton>
+            ) : (
+              <GradientBorderButton className="px-4 py-2 text-xs sm:px-5 sm:text-sm">Login</GradientBorderButton>
+            )}
+          </div>
         </div>
       </nav>
 
       <main
-        id="client-dashboard"
+        id="top"
         className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 pb-16 pt-[124px] text-center sm:px-6 sm:pb-24 sm:pt-[140px]"
       >
         <div className="animate-float-up mb-6 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-md sm:mb-8 sm:text-xs sm:tracking-[0.28em]">
-          Commercial Real Estate Oversight
+          Amseta | Real Estate Fiduciary Oversight
         </div>
         <h1 className="animate-float-up max-w-[760px] text-[42px] font-semibold leading-[1.02] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:leading-[1.05] sm:tracking-[-0.04em]">
-          <span className="text-zinc-700">Trust Your Managers</span>
+          <span className="text-zinc-700">The fiduciary layer</span>
           <br />
-          Verify the
+          for long-term
           <br />
-          Portfolio
+          real estate ownership
         </h1>
-        <p className="animate-float-up-delay mt-6 max-w-[500px] text-base leading-relaxed text-zinc-800 sm:mt-8 sm:text-lg">
-          Independent oversight for commercial real estate owners who need cleaner reporting, sharper visibility, and better manager accountability.
+        <p className="animate-float-up-delay mt-6 max-w-[620px] text-base leading-relaxed text-zinc-800 sm:mt-8 sm:text-lg">
+          Amseta serves real estate owners, passive investors, family offices, and high-net-worth
+          individuals with independent oversight, accountability, and clarity across every property.
         </p>
+        <div className="animate-float-up-delay-2 mt-8 flex w-full max-w-xl flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+          {publicMode ? (
+            <GradientBorderButton href="/login" className="px-8 py-3 text-sm sm:text-base">
+              Enter Platform
+            </GradientBorderButton>
+          ) : (
+            <GradientBorderButton className="px-8 py-3 text-sm sm:text-base">Enter Platform</GradientBorderButton>
+          )}
+          <a
+            href="#example-report"
+            className="rounded-full border border-black/10 bg-white/55 px-8 py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-white/70 sm:text-base"
+          >
+            View Example Report
+          </a>
+        </div>
 
         <div className="animate-float-up-delay-3 mt-12 w-full sm:mt-16">
           <div className="mx-auto flex max-w-[620px] items-center gap-3 rounded-[20px] border border-black/10 bg-white/55 px-4 py-4 text-left shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-md sm:max-w-none sm:gap-4 sm:px-6">
             <Logo className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
             <span className="text-sm font-medium leading-relaxed text-zinc-900">
-              One clear view across every property, manager, and report
+              We do not serve fiduciaries. We are the fiduciary layer: an independent umpire for
+              portfolio truth.
             </span>
             <svg viewBox="0 0 48 48" className="ml-auto h-6 w-6 shrink-0 sm:h-7 sm:w-7" aria-hidden="true">
               <defs>
@@ -223,10 +285,26 @@ export function ClientDashboardLandingPage({
       <section className="relative z-10 border-y border-black/10 bg-white/35 backdrop-blur-sm">
         <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-4">
           {[
-            { label: "Capex Projects", value: stats.capexProjects, detail: "Tracked across active plans" },
-            { label: "Total Units", value: stats.totalUnits, detail: "Commercial suites under review" },
-            { label: "Gross Monthly Rent", value: stats.grossMonthlyRent, detail: "Portfolio-level income snapshot" },
-            { label: "Occupancy Trends", value: stats.occupancyTrends, detail: "Current leased performance" }
+            {
+              label: "Who We Serve",
+              value: "Owners & Investors",
+              detail: "Entrepreneurs, family offices, and passive investors with long-term portfolios."
+            },
+            {
+              label: "Core Product",
+              value: "Property Scorecard",
+              detail: "A monthly diagnostic report for each property, built for ownership decisions."
+            },
+            {
+              label: "Operating Role",
+              value: "Independent Umpire",
+              detail: "Amseta sits outside the operator workflow to maintain objective accountability."
+            },
+            {
+              label: "Brand Promise",
+              value: "Time Back",
+              detail: "Peace of mind and confidence without chasing fragmented manager updates."
+            }
           ].map((stat, index) => (
             <div
               key={stat.label}
@@ -240,61 +318,91 @@ export function ClientDashboardLandingPage({
         </div>
         <div className="border-t border-black/10 py-6 text-center">
           <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-            Independent reporting for your commercial real estate portfolios
+            Clarity first. Detail when you need it.
           </div>
         </div>
       </section>
 
-      <section id="services" className="relative z-10 py-24 sm:py-32">
+      <section id="property-scorecard" className="relative z-10 py-24 sm:py-32">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 sm:gap-20 sm:px-6 lg:grid-cols-2">
           <div>
             <div className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">
-              Services
+              Core Product
             </div>
             <div className="mb-8 flex flex-wrap gap-3">
               {[BarChart3, ShieldCheck, FileText].map((Icon, index) => (
                 <div
                   key={index}
-                    className="flex items-center gap-2 rounded-full border border-black/10 bg-white/55 px-4 py-2 text-sm text-zinc-800 backdrop-blur-md"
+                  className="flex items-center gap-2 rounded-full border border-black/10 bg-white/55 px-4 py-2 text-sm text-zinc-800 backdrop-blur-md"
                 >
                   <Icon className="h-4 w-4 text-amber-400" />
-                  <span>{index === 0 ? "Performance" : index === 1 ? "Controls" : "Reporting"}</span>
+                  <span>
+                    {index === 0
+                      ? "Financial Review"
+                      : index === 1
+                        ? "Operational Insights"
+                        : "Accountability Tracking"}
+                  </span>
                 </div>
               ))}
             </div>
 
             <h2 className="mb-8 text-[40px] font-semibold leading-[1.05] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:tracking-[-0.04em]">
-              See every asset <br /> <span className="text-zinc-700">more clearly</span>
+              Property Scorecard <br /> <span className="text-zinc-700">for every asset</span>
             </h2>
-            <p className="mb-8 max-w-md text-base leading-relaxed text-zinc-800 sm:mb-10 sm:text-lg">
-              Amseta brings leasing activity, capital projects, reporting, and manager performance into one operating view built for commercial portfolios.
+            <p className="mb-8 max-w-lg text-base leading-relaxed text-zinc-800 sm:mb-10 sm:text-lg">
+              The Property Scorecard is a monthly fiduciary report that gives each property a clear
+              diagnostic view, similar to how a credit score summarizes financial health. It
+              consolidates financial reporting, property activity, capital planning, and manager
+              performance into one ownership-facing signal.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+              <a
+                href="#example-report"
+                className="rounded-full border border-black/10 bg-white/55 px-8 py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-white/70 sm:text-base"
+              >
+                View Example Report
+              </a>
               {publicMode ? (
                 <GradientBorderButton href="/login" className="px-8 py-3 text-sm sm:text-base">
-                  Explore the Platform
+                  Enter Platform
                 </GradientBorderButton>
               ) : (
-                <GradientBorderButton className="px-8 py-3 text-sm sm:text-base">Explore the Platform</GradientBorderButton>
+                <GradientBorderButton className="px-8 py-3 text-sm sm:text-base">Enter Platform</GradientBorderButton>
               )}
-              <div className="rounded-[20px] border border-black/10 bg-white/55 px-5 py-3 text-sm leading-relaxed text-zinc-700 backdrop-blur-md sm:rounded-full">
-                Dashboards, owner summaries, and audit-ready reporting
-              </div>
             </div>
           </div>
 
           <div className="group relative">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-[32px] border border-black/10 bg-white/45 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-md">
+            <div
+              id="example-report"
+              className="relative aspect-[3/4] overflow-hidden rounded-[32px] border border-black/10 bg-white/45 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-md"
+            >
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))]" />
               <div className="absolute inset-x-4 top-4 z-20 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-md sm:inset-x-8 sm:top-8 sm:text-xs sm:tracking-[0.26em]">
-                Client perspective
+                Example monthly report
               </div>
               <div className="absolute inset-x-4 bottom-4 z-20 rounded-[20px] border border-black/10 bg-white/65 px-4 py-4 backdrop-blur-md sm:inset-x-8 sm:bottom-8 sm:rounded-[24px] sm:px-6 sm:py-5">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-600 sm:text-xs sm:tracking-[0.26em]">
-                  Reporting view
+                  Property scorecard snapshot
                 </div>
                 <div className="mt-2 text-base font-medium leading-relaxed text-zinc-950 sm:text-lg">
-                  One dashboard for portfolio health, manager accountability, and owner-ready reporting.
+                  Diagnostic view combining financial review, operations, and manager
+                  accountability.
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-700 sm:text-sm">
+                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
+                    Occupancy: {stats.occupancyTrends}
+                  </div>
+                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
+                    Rent Flow: {stats.grossMonthlyRent}
+                  </div>
+                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
+                    Active Capex: {stats.capexProjects}
+                  </div>
+                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
+                    Total Units: {stats.totalUnits}
+                  </div>
                 </div>
               </div>
             </div>
@@ -302,95 +410,146 @@ export function ClientDashboardLandingPage({
         </div>
       </section>
 
-      <section id="how-we-work" className="relative z-10 py-24 sm:py-32">
+      <section id="who-we-serve" className="relative z-10 py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="rounded-[32px] border border-black/10 bg-white/45 px-6 py-12 backdrop-blur-md sm:rounded-[40px] sm:px-12 sm:py-20">
             <div className="animate-float-up mb-5 inline-flex rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-xl sm:mb-6 sm:text-xs sm:tracking-[0.3em]">
-              How we work
+              Who We Serve
             </div>
             <h2 className="animate-float-up max-w-[900px] text-[48px] font-semibold leading-[0.98] tracking-[-0.05em] text-zinc-950 sm:text-[80px] sm:leading-[1]">
-              Where real estate
+              Built for ownership
               <br />
-              takes shape
+              that demands clarity
             </h2>
             <p className="animate-float-up-delay mt-6 max-w-2xl text-base leading-relaxed text-zinc-800 sm:mt-10 sm:text-xl">
-              Amseta turns reporting, leasing activity, capital planning, and manager accountability into a
-              single oversight experience for commercial real estate owners.
+              We serve real estate owners, passive investors, family offices, and
+              high-net-worth individuals who want objective oversight and accountable execution
+              across every property.
             </p>
-            {publicMode ? (
-              <Link
-                href="/login"
-                className="animate-float-up-delay-3 mt-10 inline-flex rounded-full bg-white px-9 py-4 text-base font-bold text-black shadow-[0_20px_40px_rgba(255,255,255,0.1)] transition-all hover:scale-105 hover:bg-zinc-200 sm:mt-14 sm:px-12 sm:py-5 sm:text-lg"
-              >
-                Get in touch
-              </Link>
-            ) : (
-              <button className="animate-float-up-delay-3 mt-10 rounded-full bg-white px-9 py-4 text-base font-bold text-black shadow-[0_20px_40px_rgba(255,255,255,0.1)] transition-all hover:scale-105 hover:bg-zinc-200 sm:mt-14 sm:px-12 sm:py-5 sm:text-lg">
-                Get in touch
-              </button>
-            )}
+            <div className="animate-float-up-delay-2 mt-8 flex flex-wrap gap-3">
+              {["Real Estate Owners", "Passive Investors", "Family Offices", "High-Net-Worth Individuals"].map(
+                (audience) => (
+                  <div
+                    key={audience}
+                    className="rounded-full border border-black/10 bg-white/60 px-4 py-2 text-sm font-medium text-zinc-800"
+                  >
+                    {audience}
+                  </div>
+                )
+              )}
+            </div>
+            <div className="animate-float-up-delay-3 mt-10 rounded-[20px] border border-black/10 bg-white/60 px-5 py-4 text-sm leading-relaxed text-zinc-800 sm:max-w-3xl sm:text-base">
+              Amseta does not support fiduciaries. Amseta is the fiduciary layer.
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="about-us" className="relative z-10 py-24 sm:py-40">
+      <section id="about" className="relative z-10 py-24 sm:py-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mb-16 text-center sm:mb-24">
             <div className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">
-              About us
+              About
             </div>
-            <div className="mb-10 flex flex-wrap justify-center gap-4 sm:mb-12 sm:gap-8">
-              {iconCards.map((Icon, i) => (
-                <motion.div
-                  key={Icon.displayName ?? i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  whileHover={{ scale: 1.2, rotate: 5 }}
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl border border-black/10 bg-white/55 text-zinc-600 transition-colors hover:border-black/20 hover:text-zinc-950 backdrop-blur-md sm:h-14 sm:w-14"
-                >
-                  <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                </motion.div>
-              ))}
-            </div>
-
             <h2 className="mb-6 text-[40px] font-semibold leading-[1.05] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:tracking-[-0.04em]">
-              Built for long-term <span className="text-zinc-700">oversight</span>
+              Clarity without the noise
             </h2>
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <GlassCard
-              eyebrow="Analytics"
+              eyebrow="What Amseta Is"
               title={
                 <>
-                  Real-time <br /> Analytics
+                  Independent <br /> Fiduciary Layer
                 </>
               }
-              description="Monitor building performance, leasing movement, and key operating changes across the portfolio."
+              description="Amseta consolidates financial reporting, property activity, capital planning, and manager performance into one oversight experience for ownership."
               accent="amber"
               className="min-h-[320px] sm:min-h-[400px]"
             />
 
             <GlassCard
-              eyebrow="Oversight"
+              eyebrow="What Amseta Is Not"
               title={
                 <>
-                  Track <br /> What Matters
+                  Not the <br /> Operator
                 </>
               }
-              description="Independent oversight for owners who need clarity, accountability, and control across the portfolio."
+              description="We are not the property manager. We stay independent so accountability remains objective, transparent, and decision-ready."
               accent="blue"
               className="min-h-[320px] sm:min-h-[400px]"
             />
+          </div>
+        </div>
+      </section>
 
-            <GlassCard
-              eyebrow="Reporting"
-              title="Consolidated Reporting"
-              description="Generate owner updates, portfolio summaries, and performance reviews from one source of truth."
-              accent="mixed"
-              className="min-h-[320px] md:col-span-2 sm:min-h-[400px]"
-            />
+      <section id="team" className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-10 text-center sm:mb-14">
+            <div className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">Team</div>
+            <h3 className="text-[34px] font-semibold leading-tight tracking-[-0.04em] text-zinc-950 sm:text-[48px]">
+              A multidisciplinary oversight team
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {teamCards.map((card, index) => (
+              <motion.div
+                key={card.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.08, duration: 0.45 }}
+                className="rounded-[28px] border border-black/10 bg-white/55 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-md sm:p-8"
+              >
+                <card.icon className="mb-4 h-6 w-6 text-zinc-800" />
+                <h4 className="mb-3 text-xl font-semibold text-zinc-950">{card.title}</h4>
+                <p className="text-sm leading-relaxed text-zinc-700 sm:text-base">{card.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="additional-services" className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-10 text-center sm:mb-14">
+            <div className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">
+              Additional Services
+            </div>
+            <h3 className="text-[34px] font-semibold leading-tight tracking-[-0.04em] text-zinc-950 sm:text-[48px]">
+              Broader owner-side support
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {[
+              {
+                title: "Portfolio Narrative Briefs",
+                description:
+                  "Decision-ready monthly briefings for principals and investment committees.",
+                icon: Layers
+              },
+              {
+                title: "Manager Performance Reviews",
+                description:
+                  "Structured accountability conversations tied to agreed operating expectations.",
+                icon: Globe
+              },
+              {
+                title: "Capital Plan Oversight",
+                description:
+                  "Independent tracking of capex execution, sequencing risk, and reporting quality.",
+                icon: Zap
+              }
+            ].map((service) => (
+              <div
+                key={service.title}
+                className="rounded-[28px] border border-black/10 bg-white/55 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-md sm:p-8"
+              >
+                <service.icon className="mb-4 h-6 w-6 text-zinc-800" />
+                <h4 className="mb-3 text-xl font-semibold text-zinc-950">{service.title}</h4>
+                <p className="text-sm leading-relaxed text-zinc-700 sm:text-base">{service.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -407,11 +566,11 @@ export function ClientDashboardLandingPage({
               Ready when you are
             </div>
             <h2 className="animate-float-up mb-8 text-[44px] font-semibold leading-[0.98] tracking-[-0.05em] text-zinc-950 sm:mb-10 sm:text-[80px] sm:leading-[1]">
-              Ready for clearer <br /> <span className="text-zinc-950">portfolio oversight?</span>
+              Ready for clear <br /> <span className="text-zinc-950">portfolio oversight?</span>
             </h2>
             <p className="animate-float-up-delay mx-auto mb-10 max-w-2xl text-base leading-relaxed text-zinc-700 sm:mb-16 sm:text-xl">
-              Join owners who want clearer reporting, stronger accountability, and a better view across
-              every asset in the portfolio.
+              For owners who want clear reporting, strong accountability, and a better view across
+              every asset.
             </p>
             <div className="animate-float-up-delay-3 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center sm:gap-8">
               {publicMode ? (
@@ -427,18 +586,24 @@ export function ClientDashboardLandingPage({
                 </button>
               )}
               {publicMode ? (
-                <Link
-                  href="/login"
+                <a
+                  href="#example-report"
                   className="rounded-full border border-black/10 bg-white/50 px-9 py-4 text-base font-bold text-zinc-950 transition-all hover:bg-white/70 sm:px-12 sm:py-5 sm:text-lg"
                 >
-                  Client Login
-                </Link>
+                  View Example Report
+                </a>
               ) : (
-                <button className="rounded-full border border-black/10 bg-white/50 px-9 py-4 text-base font-bold text-zinc-950 transition-all hover:bg-white/70 sm:px-12 sm:py-5 sm:text-lg">
-                  Client Login
-                </button>
+                <a
+                  href="#example-report"
+                  className="rounded-full border border-black/10 bg-white/50 px-9 py-4 text-base font-bold text-zinc-950 transition-all hover:bg-white/70 sm:px-12 sm:py-5 sm:text-lg"
+                >
+                  View Example Report
+                </a>
               )}
             </div>
+            <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-zinc-600 sm:text-base">
+              Peace of mind. Time back. Confidence in long-term ownership.
+            </p>
           </div>
         </div>
 
@@ -462,11 +627,11 @@ export function ClientDashboardLandingPage({
                     <div className="mt-6 flex flex-col gap-4 text-sm text-zinc-700">
                       {column.links.map((link) => (
                         <a
-                          key={link}
-                          href={link === "Privacy" ? "/privacy" : link === "Terms" ? "/terms" : "#"}
+                          key={link.label}
+                          href={link.href}
                           className="transition-colors hover:text-zinc-950"
                         >
-                          {link}
+                          {link.label}
                         </a>
                       ))}
                     </div>
