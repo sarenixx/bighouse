@@ -20,6 +20,7 @@ The user-visible outcome is not a redesigned screen. It is confidence: invalid o
 - [x] (2026-04-18 03:24Z) Removed source-level demo credentials, moved seed credentials to environment configuration, and added account lockout state to the user model.
 - [x] (2026-04-18 03:28Z) Replaced per-process throttle logic with a shared rate-limit backend abstraction that uses Redis when `REDIS_URL` is configured and falls back to local memory for development and tests.
 - [x] (2026-04-18 03:31Z) Re-validated `npm run db:generate`, `npm run test`, `npm run lint`, and `npm run build` after the account lockout and Redis-backed rate-limit pass.
+- [x] (2026-04-19 02:55Z) Added a D1-backed shared rate-limit backend for Cloudflare Workers, plus a schema migration and focused store test so production no longer depends on a separate Redis service to share counters.
 
 ## Surprises & Discoveries
 
@@ -44,6 +45,9 @@ The user-visible outcome is not a redesigned screen. It is confidence: invalid o
 - Observation: The `redis` package’s connected-client type is more specific than the pre-connect client type, so helper code is easier to type when it infers the connected type from `createClient().connect()` instead of naming `RedisClientType` directly.
   Evidence: The first build failed with a RESP generic mismatch until the helper switched to `Awaited<ReturnType<ReturnType<typeof createClient>["connect"]>>`.
 
+- Observation: The existing Redis-or-memory abstraction still left the deployed Cloudflare Worker on per-isolate memory unless a separate Redis service was provisioned and reachable from the Worker runtime.
+  Evidence: `lib/server/rate-limit-store.ts` previously checked only `REDIS_URL` and otherwise used an in-memory `Map`, while the live Worker config already had a D1 binding available in `wrangler.jsonc`.
+
 ## Decision Log
 
 - Decision: Start the hardening effort with the server mutation boundary and upload path rather than with UI refactors.
@@ -62,6 +66,10 @@ The user-visible outcome is not a redesigned screen. It is confidence: invalid o
   Rationale: The goal was to close the multi-instance gap in production without making day-one development, tests, or preview environments dependent on extra infrastructure.
   Date/Author: 2026-04-18 / Codex
 
+- Decision: Prefer D1-backed shared counters in the Cloudflare Worker runtime while preserving Redis support for non-Worker deployments and memory fallback for local development/tests.
+  Rationale: The app already depends on D1 in production, so using it for rate limiting removes an extra infrastructure dependency while still preserving the original abstraction shape.
+  Date/Author: 2026-04-19 / Codex
+
 ## Outcomes & Retrospective
 
 The first hardening milestone landed successfully. Property-scoped mutations now prove tenant ownership before writing, issue/task updates no longer silently succeed with zero affected rows, and document uploads enforce an explicit allowlist and a 10 MB size limit before touching disk. The route handlers now translate known application failures into clear JSON error responses instead of relying on generic exceptions.
@@ -69,6 +77,8 @@ The first hardening milestone landed successfully. Property-scoped mutations now
 The repository also now has a real automated test entry point. `npm run test` executes focused server-side tests for the new mutation guard and upload validator, which gives the project a repeatable safety net where previously there was only manual validation.
 
 The second hardening pass tightened the auth surface further. Source-level shared demo credentials are gone, seeded demo access is now environment-driven, login failures can lock an account temporarily, and the rate-limit layer now supports Redis-backed shared counters for multi-instance deployments while keeping a local-memory fallback for development.
+
+The latest pass aligns that shared-counter story with the actual Cloudflare production target. The Worker runtime now uses D1-backed rate-limit buckets through the already-bound `DB` database, which means the deployed login and API throttles no longer depend on per-isolate memory or on provisioning a separate Redis service just to share counters.
 
 The main remaining gap is broader end-to-end confidence and deployment enforcement. This milestone still did not add browser automation, HTTPS/origin enforcement, or a route-by-route DTO review, so a future pass should extend coverage outward from helper tests into route-level, browser-level, and deployment-level controls.
 
@@ -107,6 +117,8 @@ If the implementation touches Prisma types but not the schema, `npm run db:gener
     npm run db:generate
 
 Expected outcome after implementation: lint passes, the automated tests pass, Prisma client generation succeeds after schema changes, production build still succeeds, and throttling can use Redis in production when `REDIS_URL` is configured.
+
+Updated outcome after the Cloudflare follow-up: throttling should use D1-backed shared counters automatically when the app is running inside the deployed Worker, while still allowing Redis-backed or in-memory behavior in the other execution modes.
 
 ## Validation and Acceptance
 
@@ -194,6 +206,7 @@ Second-pass validation evidence:
     ✓ tests/account-lockout.test.ts (3 tests)
     ✓ tests/api-rate-limit.test.ts (2 tests)
     ✓ tests/login-rate-limit.test.ts (3 tests)
+    ✓ tests/rate-limit-store.test.ts (1 test)
 
     $ npm run build
     ✓ Compiled successfully
@@ -202,6 +215,19 @@ Second-pass validation evidence:
     ƒ Proxy (Middleware)
 
 These results show that the account lockout and shared-store throttle work landed cleanly on top of the earlier hardening pass.
+
+Cloudflare-follow-up validation evidence:
+
+    $ npm run db:generate
+    ✔ Generated Prisma Client ...
+
+    $ npm run test
+    ✓ tests/rate-limit-store.test.ts (1 test)
+
+    $ npm run build
+    ✓ Compiled successfully
+    ƒ /api/auth/login
+    ƒ Proxy (Middleware)
 
 ## Interfaces and Dependencies
 
@@ -250,7 +276,9 @@ For the distributed-throttling follow-up, the repository should provide a shared
       key: string;
     }): Promise<void>;
 
-When `REDIS_URL` is configured, these helpers should use Redis-backed counters. When it is absent, they should fall back to in-memory counters so the repository remains easy to run locally.
+When the app is running inside the Cloudflare Worker and the `DB` binding exists, these helpers should use D1-backed counters. When `REDIS_URL` is configured in a non-Worker environment, they may use Redis-backed counters. Otherwise they should fall back to in-memory counters so the repository remains easy to run locally.
+
+Plan update note: Updated again on 2026-04-19 after the Cloudflare production hardening pass so the document reflects the D1-backed shared rate-limit backend added on top of the earlier Redis-or-memory abstraction.
 
 Plan update note: Created this ExecPlan on 2026-04-18 to define the first post-demo hardening milestone after the initial dashboard build reached feature-complete status.
 

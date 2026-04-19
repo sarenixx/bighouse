@@ -166,6 +166,7 @@ After deployment:
 
 - `lib/server/prisma.ts` switches between `better-sqlite3` and `@prisma/adapter-d1` at runtime.
 - `prisma/seed.ts` can seed local SQLite or remote D1 with the same dataset, but it is intentionally a bootstrap tool rather than part of the normal release path.
+- Production rate limiting now prefers the existing Cloudflare D1 binding for shared counters, falls back to Redis when configured outside the Worker runtime, and uses local memory only for development and tests.
 - `middleware.ts` is intentionally kept even though Next.js 16 warns that `proxy.ts` is the newer convention. In this repo, the OpenNext Cloudflare build currently succeeds with `middleware.ts` and fails with `proxy.ts`.
 - Generated Cloudflare build output lives under `.open-next/` and Wrangler state may appear under `.wrangler/`.
 - `npm run bootstrap:cloudflare` is for first-time environment setup and demo-data seeding.

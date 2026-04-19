@@ -52,6 +52,13 @@ model Session {
   @@index([expiresAt])
 }
 
+model RateLimitBucket {
+  storageKey String   @id
+  count      Int
+  resetAt    DateTime
+  updatedAt  DateTime @default(now())
+}
+
 model Manager {
   id             String     @id
   tenantId       String
