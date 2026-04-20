@@ -36,6 +36,13 @@ const footerColumns = [
       { label: "Receive Example Report", href: "#top" },
       { label: "Contact", href: "mailto:hello@amseta.com" }
     ]
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" }
+    ]
   }
 ];
 
@@ -394,7 +401,7 @@ export function ClientDashboardLandingPage({
           </div>
           <div className="hidden items-center gap-5 md:flex">
             <a href="/login" className="text-sm font-semibold text-zinc-800 transition-colors hover:text-zinc-950">
-              Login
+              Client Login
             </a>
             <a
               href="mailto:hello@amseta.com"
@@ -406,10 +413,12 @@ export function ClientDashboardLandingPage({
           <div className="md:hidden">
             {publicMode ? (
               <GradientBorderButton href="/login" className="px-4 py-2 text-xs sm:px-5 sm:text-sm">
-                Login
+                Client Login
               </GradientBorderButton>
             ) : (
-              <GradientBorderButton className="px-4 py-2 text-xs sm:px-5 sm:text-sm">Login</GradientBorderButton>
+              <GradientBorderButton className="px-4 py-2 text-xs sm:px-5 sm:text-sm">
+                Client Login
+              </GradientBorderButton>
             )}
           </div>
         </div>
@@ -718,7 +727,7 @@ export function ClientDashboardLandingPage({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-12 lg:gap-16">
+            <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-12 lg:grid-cols-4 lg:gap-16">
               {footerColumns.map((column) => (
                 <div key={column.title}>
                   <div className="text-xs font-bold uppercase tracking-widest text-zinc-700">{column.title}</div>

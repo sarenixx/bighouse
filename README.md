@@ -152,6 +152,29 @@ npm run release:cloudflare
 
 That script runs the local validation gates, checks Wrangler auth, applies any new schema migrations, backfills any missing property scoreboard JSON fields on remote D1, deploys the Worker, and then prints the post-deploy smoke checks. It does not reseed production data. Make sure `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_DATABASE_ID`, and `CLOUDFLARE_D1_TOKEN` are still exported in the shell before you run it.
 
+## CTA email delivery (Cloudflare Email)
+
+The landing-page CTA (`/api/waitlist`) stores the lead and then attempts to send an attached Amseta Example Report Card PDF.
+
+1. Onboard your sending domain in Cloudflare Email Sending.
+2. Confirm `wrangler.jsonc` has the `send_email` binding named `EMAIL`.
+3. Set Worker vars for sender and report URL:
+
+   ```bash
+   npx wrangler secret put EMAIL_FROM_ADDRESS
+   npx wrangler secret put EMAIL_REPORT_URL
+   ```
+
+   Typical values:
+   - `EMAIL_FROM_ADDRESS=hello@amseta.com`
+   - `EMAIL_REPORT_URL=https://amseta.com/demo`
+
+4. Deploy with `npm run deploy`.
+
+If the binding is not available, the route can fall back to Cloudflare Email REST API when these environment variables are set:
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_EMAIL_API_TOKEN`
+
 ## Custom domain
 
 `wrangler.jsonc` already declares custom-domain routes for `amseta.com` and `www.amseta.com`.

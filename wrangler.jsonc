@@ -5,8 +5,16 @@
   "compatibility_date": "2026-04-18",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "vars": {
-    "SESSION_COOKIE_NAME": "amseta_session"
+    "SESSION_COOKIE_NAME": "amseta_session",
+    "EMAIL_FROM_ADDRESS": "hello@amseta.com",
+    "EMAIL_REPORT_URL": "https://amseta.com/demo"
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "remote": true
+    }
+  ],
   "routes": [
     {
       "pattern": "amseta.com",
