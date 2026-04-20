@@ -169,7 +169,13 @@ The landing-page CTA (`/api/waitlist`) stores the lead and then attempts to send
    - `EMAIL_FROM_ADDRESS=hello@amseta.com`
    - `EMAIL_REPORT_URL=https://amseta.com/demo`
 
-4. Deploy with `npm run deploy`.
+4. Optional bot protection and confirmation settings:
+   - Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` in your build environment to render a Turnstile challenge on the public form.
+   - Set `TURNSTILE_SECRET_KEY` (Worker secret) to enforce server-side Turnstile verification.
+   - Set `TURNSTILE_EXPECTED_HOSTNAME=amseta.com` to pin challenge validation to your hostname.
+   - Set `WAITLIST_REQUIRE_CONFIRMATION=true` and `WAITLIST_CONFIRMATION_SECRET=<long-random-secret>` to require email confirmation before sending the PDF report.
+
+5. Deploy with `npm run deploy`.
 
 If the binding is not available, the route can fall back to Cloudflare Email REST API when these environment variables are set:
 - `CLOUDFLARE_ACCOUNT_ID`

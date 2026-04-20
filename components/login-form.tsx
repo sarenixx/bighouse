@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { sanitizeRedirectPath } from "@/lib/utils";
 
 export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const [email, setEmail] = useState("");
@@ -36,7 +37,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 
       // Use a full navigation so the new session cookie is definitely present
       // before protected dashboard routes are evaluated.
-      window.location.assign(redirectTo ?? "/dashboard");
+      window.location.assign(sanitizeRedirectPath(redirectTo, "/dashboard"));
     } catch {
       setError("Unable to sign in.");
       setIsSubmitting(false);

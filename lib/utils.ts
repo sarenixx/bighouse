@@ -37,3 +37,34 @@ export function formatDate(value: string) {
 export function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
+
+export function sanitizeRedirectPath(value: string | null | undefined, fallback = "/dashboard") {
+  if (!value) {
+    return fallback;
+  }
+
+  const candidate = value.trim();
+
+  if (!candidate.startsWith("/") || candidate.startsWith("//")) {
+    return fallback;
+  }
+
+  if (candidate.startsWith("/api/")) {
+    return fallback;
+  }
+
+  if (candidate.includes("\r") || candidate.includes("\n")) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(candidate, "https://amseta.com");
+    if (parsed.origin !== "https://amseta.com") {
+      return fallback;
+    }
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return fallback;
+  }
+}

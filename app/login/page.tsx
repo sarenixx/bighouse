@@ -3,6 +3,7 @@ import { LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
 import { LoginForm } from "@/components/login-form";
 import { Card, CardContent } from "@/components/ui/card";
+import { sanitizeRedirectPath } from "@/lib/utils";
 
 const trustSignals = [
   "Portfolio-level visibility without replacing property managers",
@@ -16,6 +17,7 @@ export default async function LoginPage({
   searchParams: Promise<{ from?: string }>;
 }) {
   const params = await searchParams;
+  const safeRedirectTo = sanitizeRedirectPath(params.from, "/dashboard");
 
   return (
     <div className="min-h-screen px-4 py-6 lg:px-8">
@@ -54,7 +56,7 @@ export default async function LoginPage({
                 This mock access screen is designed for a client-facing demo. It frames the product as a premium service portal rather than a manager-facing software tool.
               </p>
 
-              <LoginForm redirectTo={params.from} />
+              <LoginForm redirectTo={safeRedirectTo} />
             </div>
 
             <div className="space-y-3">

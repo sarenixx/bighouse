@@ -5,8 +5,13 @@ const MAX_ATTEMPTS = 5;
 const LOGIN_RATE_LIMIT_NAMESPACE = "login";
 
 export function getRequestClientIp(request: Request) {
+  const cfConnectingIp = request.headers.get("cf-connecting-ip");
   const forwardedFor = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
+
+  if (cfConnectingIp) {
+    return cfConnectingIp.trim();
+  }
 
   if (forwardedFor) {
     return forwardedFor.split(",")[0]?.trim() || "unknown";

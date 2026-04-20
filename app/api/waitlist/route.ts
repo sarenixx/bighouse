@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 import { getRequestClientIp } from "@/lib/server/login-rate-limit";
@@ -10,6 +11,8 @@ import { consumeRateLimit } from "@/lib/server/rate-limit-store";
 const WAITLIST_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const WAITLIST_RATE_LIMIT_MAX_ATTEMPTS = 8;
 const WAITLIST_RATE_LIMIT_NAMESPACE = "waitlist";
+const WAITLIST_MIN_FORM_FILL_MS = 2500;
+const WAITLIST_CONFIRMATION_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_EXAMPLE_REPORT_URL = "https://amseta.com/demo";
 const DEFAULT_EXAMPLE_REPORT_PDF_URL = "https://amseta.com/amseta-example-report-card.pdf";
 
@@ -39,6 +42,10 @@ type CloudflareEnvLike = {
   EMAIL_FROM_ADDRESS?: string;
   EMAIL_REPORT_URL?: string;
   EMAIL_REPORT_PDF_URL?: string;
+  WAITLIST_REQUIRE_CONFIRMATION?: string;
+  WAITLIST_CONFIRMATION_SECRET?: string;
+  TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_EXPECTED_HOSTNAME?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   CLOUDFLARE_EMAIL_API_TOKEN?: string;
 };
@@ -49,7 +56,7 @@ type ExampleReportEmail = {
   subject: string;
   text: string;
   html: string;
-  attachments: EmailAttachment[];
+  attachments?: EmailAttachment[];
 };
 
 type EmailDeliveryResult = {
@@ -65,7 +72,10 @@ type ExampleReportPdfAsset = {
 
 const waitlistSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(320),
-  source: z.string().trim().min(2).max(80).optional()
+  source: z.string().trim().min(2).max(80).optional(),
+  honeypot: z.string().max(200).optional(),
+  formStartedAtMs: z.number().int().positive().optional(),
+  turnstileToken: z.string().min(10).max(4096).optional()
 });
 
 function getNormalizedEmail(payload: unknown) {
@@ -98,6 +108,14 @@ function getStringValue(value: unknown) {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+function parseBoolean(value: string | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  return value.toLowerCase() === "true" || value === "1" || value.toLowerCase() === "yes";
+}
+
 function encodeBytesToBase64(bytes: Uint8Array) {
   if (typeof Buffer !== "undefined") {
     return Buffer.from(bytes).toString("base64");
@@ -128,6 +146,61 @@ function isPdf(bytes: Uint8Array) {
   );
 }
 
+function encodeBase64Url(value: string) {
+  return Buffer.from(value, "utf8").toString("base64url");
+}
+
+function decodeBase64Url(value: string) {
+  return Buffer.from(value, "base64url").toString("utf8");
+}
+
+function createWaitlistConfirmationToken(email: string, secret: string) {
+  const payload = encodeBase64Url(
+    JSON.stringify({
+      email,
+      exp: Date.now() + WAITLIST_CONFIRMATION_TTL_MS
+    })
+  );
+  const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+function verifyWaitlistConfirmationToken(token: string, secret: string) {
+  const [payload, providedSignature] = token.split(".");
+  if (!payload || !providedSignature) {
+    return null;
+  }
+
+  const expectedSignature = createHmac("sha256", secret).update(payload).digest("base64url");
+  const providedBuffer = Buffer.from(providedSignature, "utf8");
+  const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+
+  if (
+    providedBuffer.length !== expectedBuffer.length ||
+    !timingSafeEqual(providedBuffer, expectedBuffer)
+  ) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(decodeBase64Url(payload)) as {
+      email?: unknown;
+      exp?: unknown;
+    };
+    if (typeof parsed.email !== "string" || typeof parsed.exp !== "number") {
+      return null;
+    }
+
+    if (parsed.exp < Date.now()) {
+      return null;
+    }
+
+    return parsed.email.trim().toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 async function getCloudflareEnv() {
   try {
     const context = getCloudflareContext();
@@ -140,6 +213,42 @@ async function getCloudflareEnv() {
   } catch {
     return undefined;
   }
+}
+
+async function verifyTurnstileToken(args: {
+  secret: string;
+  token: string;
+  remoteIp: string;
+  expectedHostname?: string;
+}) {
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      secret: args.secret,
+      response: args.token,
+      remoteip: args.remoteIp
+    })
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const payload = (await response.json().catch(() => null)) as
+    | { success?: boolean; hostname?: string }
+    | null;
+  if (!payload?.success) {
+    return false;
+  }
+
+  if (args.expectedHostname && payload.hostname !== args.expectedHostname) {
+    return false;
+  }
+
+  return true;
 }
 
 async function fetchExampleReportPdfAsset(reportPdfUrl: string): Promise<ExampleReportPdfAsset> {
@@ -248,27 +357,149 @@ async function sendWithCloudflareRestApi(args: {
   }
 }
 
-async function sendExampleReportEmail(args: { to: string; origin: string }): Promise<EmailDeliveryResult> {
+type WaitlistEmailConfig = {
+  binding?: EmailBindingLike;
+  fromAddress?: string;
+  reportUrl: string;
+  reportPdfUrl: string;
+  accountId?: string;
+  apiToken?: string;
+  requireConfirmation: boolean;
+  confirmationSecret?: string;
+  turnstileSecret?: string;
+  turnstileExpectedHostname?: string;
+};
+
+async function getWaitlistEmailConfig(origin: string): Promise<WaitlistEmailConfig> {
   const cloudflareEnv = await getCloudflareEnv();
-  const binding = cloudflareEnv?.EMAIL;
+
+  return {
+    binding: cloudflareEnv?.EMAIL,
+    fromAddress:
+      getStringValue(cloudflareEnv?.EMAIL_FROM_ADDRESS) ?? getStringValue(process.env.EMAIL_FROM_ADDRESS),
+    reportUrl:
+      getStringValue(cloudflareEnv?.EMAIL_REPORT_URL) ??
+      getStringValue(process.env.EMAIL_REPORT_URL) ??
+      DEFAULT_EXAMPLE_REPORT_URL,
+    reportPdfUrl:
+      getStringValue(cloudflareEnv?.EMAIL_REPORT_PDF_URL) ??
+      getStringValue(process.env.EMAIL_REPORT_PDF_URL) ??
+      DEFAULT_EXAMPLE_REPORT_PDF_URL,
+    accountId:
+      getStringValue(cloudflareEnv?.CLOUDFLARE_ACCOUNT_ID) ??
+      getStringValue(process.env.CLOUDFLARE_ACCOUNT_ID),
+    apiToken:
+      getStringValue(cloudflareEnv?.CLOUDFLARE_EMAIL_API_TOKEN) ??
+      getStringValue(process.env.CLOUDFLARE_EMAIL_API_TOKEN),
+    requireConfirmation: parseBoolean(
+      getStringValue(cloudflareEnv?.WAITLIST_REQUIRE_CONFIRMATION) ??
+        getStringValue(process.env.WAITLIST_REQUIRE_CONFIRMATION)
+    ),
+    confirmationSecret:
+      getStringValue(cloudflareEnv?.WAITLIST_CONFIRMATION_SECRET) ??
+      getStringValue(process.env.WAITLIST_CONFIRMATION_SECRET),
+    turnstileSecret:
+      getStringValue(cloudflareEnv?.TURNSTILE_SECRET_KEY) ??
+      getStringValue(process.env.TURNSTILE_SECRET_KEY),
+    turnstileExpectedHostname:
+      getStringValue(cloudflareEnv?.TURNSTILE_EXPECTED_HOSTNAME) ??
+      getStringValue(process.env.TURNSTILE_EXPECTED_HOSTNAME) ??
+      new URL(origin).hostname
+  };
+}
+
+function buildWaitlistConfirmationEmail(args: {
+  to: string;
+  from?: string;
+  confirmationUrl: string;
+}): ExampleReportEmail {
+  const subject = "Confirm your email to receive your Amseta example report";
+  const text = [
+    "Thanks for your interest in Amseta.",
+    "",
+    "Please confirm your email address to receive your example report PDF:",
+    args.confirmationUrl,
+    "",
+    "If you did not request this, you can ignore this message."
+  ].join("\n");
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827;">
+      <p>Thanks for your interest in <strong>Amseta</strong>.</p>
+      <p>Please confirm your email address to receive your example report PDF.</p>
+      <p>
+        <a href="${args.confirmationUrl}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#111827;color:#ffffff;text-decoration:none;font-weight:600;">
+          Confirm Email
+        </a>
+      </p>
+      <p style="font-size:14px;color:#4b5563;">If you did not request this, you can ignore this message.</p>
+    </div>
+  `;
+
+  return {
+    to: args.to,
+    from: args.from,
+    subject,
+    text,
+    html
+  };
+}
+
+async function sendWaitlistConfirmationEmail(args: {
+  to: string;
+  confirmationUrl: string;
+  config: WaitlistEmailConfig;
+}): Promise<EmailDeliveryResult> {
+  const email = buildWaitlistConfirmationEmail({
+    to: args.to,
+    from: args.config.fromAddress,
+    confirmationUrl: args.confirmationUrl
+  });
+
+  if (args.config.binding) {
+    try {
+      await sendWithEmailBinding(args.config.binding, email);
+      return { ok: true, provider: "binding" };
+    } catch (error) {
+      console.error("waitlist_confirmation_email_binding_failed", error);
+    }
+  }
+
+  if (!email.from || !args.config.accountId || !args.config.apiToken) {
+    return {
+      ok: false,
+      provider: "none",
+      error:
+        "Email sending is not configured. Add EMAIL binding or set EMAIL_FROM_ADDRESS, CLOUDFLARE_ACCOUNT_ID, and CLOUDFLARE_EMAIL_API_TOKEN."
+    };
+  }
+
+  try {
+    await sendWithCloudflareRestApi({
+      accountId: args.config.accountId,
+      apiToken: args.config.apiToken,
+      email
+    });
+    return { ok: true, provider: "rest" };
+  } catch (error) {
+    return {
+      ok: false,
+      provider: "rest",
+      error: error instanceof Error ? error.message : "Cloudflare Email REST API send failed."
+    };
+  }
+}
+
+async function sendExampleReportEmail(args: {
+  to: string;
+  config: WaitlistEmailConfig;
+}): Promise<EmailDeliveryResult> {
+  const binding = args.config.binding;
   const fromAddress =
-    getStringValue(cloudflareEnv?.EMAIL_FROM_ADDRESS) ?? getStringValue(process.env.EMAIL_FROM_ADDRESS);
-  const reportUrl =
-    getStringValue(cloudflareEnv?.EMAIL_REPORT_URL) ??
-    getStringValue(process.env.EMAIL_REPORT_URL) ??
-    DEFAULT_EXAMPLE_REPORT_URL;
-  const accountId =
-    getStringValue(cloudflareEnv?.CLOUDFLARE_ACCOUNT_ID) ??
-    getStringValue(process.env.CLOUDFLARE_ACCOUNT_ID);
-  const apiToken =
-    getStringValue(cloudflareEnv?.CLOUDFLARE_EMAIL_API_TOKEN) ??
-    getStringValue(process.env.CLOUDFLARE_EMAIL_API_TOKEN);
-  const reportPdfUrl =
-    getStringValue(cloudflareEnv?.EMAIL_REPORT_PDF_URL) ??
-    getStringValue(process.env.EMAIL_REPORT_PDF_URL) ??
-    (args.origin
-      ? new URL("/amseta-example-report-card.pdf", args.origin).toString()
-      : DEFAULT_EXAMPLE_REPORT_PDF_URL);
+    args.config.fromAddress;
+  const reportUrl = args.config.reportUrl;
+  const accountId = args.config.accountId;
+  const apiToken = args.config.apiToken;
+  const reportPdfUrl = args.config.reportPdfUrl;
 
   let reportPdfAsset: ExampleReportPdfAsset;
   try {
@@ -335,10 +566,67 @@ async function sendExampleReportEmail(args: { to: string; origin: string }): Pro
   }
 }
 
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const confirmationToken = getStringValue(url.searchParams.get("confirm"));
+
+  if (!confirmationToken) {
+    return NextResponse.json({ error: "Missing confirmation token." }, { status: 400 });
+  }
+
+  const config = await getWaitlistEmailConfig(url.origin);
+  if (!config.confirmationSecret) {
+    return NextResponse.json({ error: "Confirmation is not configured." }, { status: 500 });
+  }
+
+  const confirmedEmail = verifyWaitlistConfirmationToken(
+    confirmationToken,
+    config.confirmationSecret
+  );
+  if (!confirmedEmail) {
+    return NextResponse.json({ error: "Invalid or expired confirmation token." }, { status: 400 });
+  }
+
+  const prisma = await getPrisma();
+  const entry = await prisma.waitlistEntry.findUnique({
+    where: { email: confirmedEmail }
+  });
+  if (!entry) {
+    return NextResponse.json({ error: "Waitlist request not found." }, { status: 404 });
+  }
+
+  const delivery = await sendExampleReportEmail({
+    to: confirmedEmail,
+    config
+  });
+
+  try {
+    await prisma.waitlistEntry.update({
+      where: { email: confirmedEmail },
+      data: { status: delivery.ok ? "sent" : "failed" }
+    });
+  } catch (error) {
+    console.error("waitlist_confirmation_status_update_failed", error);
+  }
+
+  if (!delivery.ok && delivery.error) {
+    console.error("waitlist_confirmation_delivery_failed", {
+      provider: delivery.provider,
+      email: confirmedEmail,
+      error: delivery.error
+    });
+  }
+
+  const destination = new URL("/", request.url);
+  destination.searchParams.set("example_report", delivery.ok ? "sent" : "pending");
+  return NextResponse.redirect(destination);
+}
+
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => null);
+  const requestIp = getRequestClientIp(request);
   const normalizedEmail = getNormalizedEmail(payload);
-  const rateLimitKey = `${getRequestClientIp(request)}:${normalizedEmail || "anonymous"}`;
+  const rateLimitKey = `${requestIp}:${normalizedEmail || "anonymous"}`;
   const rateLimit = await consumeRateLimit({
     namespace: WAITLIST_RATE_LIMIT_NAMESPACE,
     key: rateLimitKey,
@@ -363,12 +651,54 @@ export async function POST(request: Request) {
     );
   }
 
+  const requestOrigin = new URL(request.url).origin;
+  const config = await getWaitlistEmailConfig(requestOrigin);
+
+  if (parsed.data.honeypot?.trim()) {
+    return NextResponse.json(
+      { ok: true, message: "Request received. We will send your example report shortly." },
+      { status: 200, headers }
+    );
+  }
+
+  if (
+    parsed.data.formStartedAtMs &&
+    Date.now() - parsed.data.formStartedAtMs < WAITLIST_MIN_FORM_FILL_MS
+  ) {
+    return NextResponse.json(
+      { error: "Please wait a moment and try again." },
+      { status: 400, headers }
+    );
+  }
+
+  if (config.turnstileSecret) {
+    if (!parsed.data.turnstileToken) {
+      return NextResponse.json(
+        { error: "Please complete the verification challenge." },
+        { status: 400, headers }
+      );
+    }
+
+    const turnstileOk = await verifyTurnstileToken({
+      secret: config.turnstileSecret,
+      token: parsed.data.turnstileToken,
+      remoteIp: requestIp,
+      expectedHostname: config.turnstileExpectedHostname
+    });
+    if (!turnstileOk) {
+      return NextResponse.json(
+        { error: "Verification failed. Please try again." },
+        { status: 400, headers }
+      );
+    }
+  }
+
   const prisma = await getPrisma();
   const entryData = {
     id: `waitlist-${crypto.randomUUID()}`,
     email: parsed.data.email,
     source: parsed.data.source ?? "landing-page",
-    status: "pending"
+    status: config.requireConfirmation ? "pending_confirmation" : "pending"
   } as const;
   let created = false;
 
@@ -390,11 +720,37 @@ export async function POST(request: Request) {
     }
   }
 
-  const delivery = await sendExampleReportEmail({
-    to: parsed.data.email,
-    origin: new URL(request.url).origin
-  });
-  const nextStatus = delivery.ok ? "sent" : "failed";
+  if (config.requireConfirmation && !config.confirmationSecret) {
+    console.error("waitlist_confirmation_secret_missing");
+    return NextResponse.json(
+      { error: "Request received, but confirmation email is not configured yet." },
+      { status: 500, headers }
+    );
+  }
+
+  const delivery = config.requireConfirmation
+    ? await sendWaitlistConfirmationEmail({
+        to: parsed.data.email,
+        confirmationUrl: (() => {
+          const confirmationToken = createWaitlistConfirmationToken(
+            parsed.data.email,
+            config.confirmationSecret as string
+          );
+          const confirmationUrl = new URL("/api/waitlist", request.url);
+          confirmationUrl.searchParams.set("confirm", confirmationToken);
+          return confirmationUrl.toString();
+        })(),
+        config
+      })
+    : await sendExampleReportEmail({
+        to: parsed.data.email,
+        config
+      });
+  const nextStatus = delivery.ok
+    ? config.requireConfirmation
+      ? "confirmation_sent"
+      : "sent"
+    : "failed";
 
   try {
     await prisma.waitlistEntry.update({
@@ -416,9 +772,13 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       ok: true,
-      message: delivery.ok
-        ? "Check your inbox for your example report."
-        : "Request received. We will send your example report shortly."
+      message: config.requireConfirmation
+        ? delivery.ok
+          ? "Check your inbox to confirm your email and receive your example report."
+          : "Request received. We will send confirmation shortly."
+        : delivery.ok
+          ? "Check your inbox for your example report."
+          : "Request received. We will send your example report shortly."
     },
     { status: created ? 201 : 200, headers }
   );

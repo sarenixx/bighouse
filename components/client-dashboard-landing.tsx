@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import Script from "next/script";
 
 const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260302_085640_276ea93b-d7da-4418-a09b-2aa5b490e838.mp4";
@@ -164,6 +165,19 @@ const onboardingSteps = [
   "Monthly oversight cadence launched"
 ];
 
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
+
+declare global {
+  interface Window {
+    amsetaTurnstileCallback?: (token: string) => void;
+    amsetaTurnstileExpired?: () => void;
+    amsetaTurnstileError?: () => void;
+    turnstile?: {
+      reset(widget?: string | HTMLElement): void;
+    };
+  }
+}
+
 function Logo({
   className = "h-7 w-7",
   fill = "white"
@@ -315,13 +329,44 @@ export function ClientDashboardLandingPage({
   publicMode?: boolean;
 }) {
   const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistHoneypot, setWaitlistHoneypot] = useState("");
+  const [waitlistTurnstileToken, setWaitlistTurnstileToken] = useState("");
+  const [waitlistFormStartedAtMs] = useState(() => Date.now());
   const [waitlistState, setWaitlistState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [waitlistMessage, setWaitlistMessage] = useState("");
+
+  useEffect(() => {
+    if (!publicMode || !TURNSTILE_SITE_KEY) {
+      return;
+    }
+
+    window.amsetaTurnstileCallback = (token: string) => {
+      setWaitlistTurnstileToken(token);
+    };
+    window.amsetaTurnstileExpired = () => {
+      setWaitlistTurnstileToken("");
+    };
+    window.amsetaTurnstileError = () => {
+      setWaitlistTurnstileToken("");
+    };
+
+    return () => {
+      delete window.amsetaTurnstileCallback;
+      delete window.amsetaTurnstileExpired;
+      delete window.amsetaTurnstileError;
+    };
+  }, [publicMode]);
 
   async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!waitlistEmail.trim()) {
+      return;
+    }
+
+    if (TURNSTILE_SITE_KEY && !waitlistTurnstileToken) {
+      setWaitlistState("error");
+      setWaitlistMessage("Please complete the verification challenge.");
       return;
     }
 
@@ -336,7 +381,10 @@ export function ClientDashboardLandingPage({
         },
         body: JSON.stringify({
           email: waitlistEmail,
-          source: "landing-page-example-report"
+          source: "landing-page-example-report",
+          honeypot: waitlistHoneypot,
+          formStartedAtMs: waitlistFormStartedAtMs,
+          turnstileToken: waitlistTurnstileToken || undefined
         })
       });
       const payload = (await response.json().catch(() => null)) as
@@ -356,14 +404,25 @@ export function ClientDashboardLandingPage({
         payload?.message ?? "Thanks. We will send a test example report shortly."
       );
       setWaitlistEmail("");
+      setWaitlistHoneypot("");
+      setWaitlistTurnstileToken("");
+      window.turnstile?.reset();
     } catch {
       setWaitlistState("error");
       setWaitlistMessage("Unable to submit your request right now. Please try again shortly.");
+      setWaitlistTurnstileToken("");
+      window.turnstile?.reset();
     }
   }
 
   return (
     <div className="min-h-screen overflow-hidden bg-white text-zinc-950 selection:bg-amber-500/30 selection:text-zinc-950">
+      {publicMode && TURNSTILE_SITE_KEY ? (
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          strategy="afterInteractive"
+        />
+      ) : null}
       <div className="fixed inset-0 z-0 overflow-hidden">
         <video
           autoPlay
@@ -450,6 +509,17 @@ export function ClientDashboardLandingPage({
           </p>
           {publicMode ? (
             <form onSubmit={handleWaitlistSubmit} className="mb-4 text-left">
+              <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+                <label htmlFor="company-website">Company website</label>
+                <input
+                  id="company-website"
+                  name="company_website"
+                  autoComplete="off"
+                  tabIndex={-1}
+                  value={waitlistHoneypot}
+                  onChange={(event) => setWaitlistHoneypot(event.target.value)}
+                />
+              </div>
               <label htmlFor="waitlist-email" className="mb-2 block text-sm font-semibold text-zinc-800">
                 Email address
               </label>
@@ -478,6 +548,18 @@ export function ClientDashboardLandingPage({
                   {waitlistState === "loading" ? "Sending..." : "Send"}
                 </button>
               </div>
+              {TURNSTILE_SITE_KEY ? (
+                <div className="mt-3 flex justify-center sm:justify-start">
+                  <div
+                    className="cf-turnstile"
+                    data-sitekey={TURNSTILE_SITE_KEY}
+                    data-theme="light"
+                    data-callback="amsetaTurnstileCallback"
+                    data-expired-callback="amsetaTurnstileExpired"
+                    data-error-callback="amsetaTurnstileError"
+                  />
+                </div>
+              ) : null}
             </form>
           ) : null}
           {publicMode && waitlistMessage ? (
