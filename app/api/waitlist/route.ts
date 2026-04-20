@@ -58,6 +58,11 @@ type EmailDeliveryResult = {
   error?: string;
 };
 
+type ExampleReportPdfAsset = {
+  bytes: ArrayBuffer;
+  contentType: string;
+};
+
 const waitlistSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(320),
   source: z.string().trim().min(2).max(80).optional()
@@ -109,6 +114,20 @@ function encodeBytesToBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+function isPdf(bytes: Uint8Array) {
+  if (bytes.length < 5) {
+    return false;
+  }
+
+  return (
+    bytes[0] === 0x25 && // %
+    bytes[1] === 0x50 && // P
+    bytes[2] === 0x44 && // D
+    bytes[3] === 0x46 && // F
+    bytes[4] === 0x2d // -
+  );
+}
+
 async function getCloudflareEnv() {
   try {
     const context = getCloudflareContext();
@@ -123,20 +142,39 @@ async function getCloudflareEnv() {
   }
 }
 
-async function buildExampleReportAttachment(reportPdfUrl: string): Promise<EmailAttachment> {
+async function fetchExampleReportPdfAsset(reportPdfUrl: string): Promise<ExampleReportPdfAsset> {
   const response = await fetch(reportPdfUrl);
   if (!response.ok) {
     throw new Error(`Unable to fetch example report PDF (HTTP ${response.status}).`);
   }
 
-  const pdfBytes = new Uint8Array(await response.arrayBuffer());
-  const pdfBase64 = encodeBytesToBase64(pdfBytes);
+  const bytes = await response.arrayBuffer();
+  const pdfBytes = new Uint8Array(bytes);
+  if (!isPdf(pdfBytes)) {
+    const receivedType = response.headers.get("content-type")?.trim() ?? "unknown";
+    throw new Error(`Fetched example report is not a valid PDF (content-type: ${receivedType}).`);
+  }
+
   const contentType = response.headers.get("content-type")?.trim() || "application/pdf";
 
   return {
-    content: pdfBase64,
+    bytes,
+    contentType
+  };
+}
+
+function buildExampleReportAttachment(args: {
+  bytes: ArrayBuffer;
+  contentType: string;
+  mode: "binary" | "base64";
+}): EmailAttachment {
+  const content =
+    args.mode === "binary" ? args.bytes : encodeBytesToBase64(new Uint8Array(args.bytes));
+
+  return {
+    content,
     filename: "amseta-example-report-card.pdf",
-    type: contentType,
+    type: args.contentType,
     disposition: "attachment"
   };
 }
@@ -232,9 +270,9 @@ async function sendExampleReportEmail(args: { to: string; origin: string }): Pro
       ? new URL("/amseta-example-report-card.pdf", args.origin).toString()
       : DEFAULT_EXAMPLE_REPORT_PDF_URL);
 
-  let attachment: EmailAttachment;
+  let reportPdfAsset: ExampleReportPdfAsset;
   try {
-    attachment = await buildExampleReportAttachment(reportPdfUrl);
+    reportPdfAsset = await fetchExampleReportPdfAsset(reportPdfUrl);
   } catch (error) {
     return {
       ok: false,
@@ -242,24 +280,37 @@ async function sendExampleReportEmail(args: { to: string; origin: string }): Pro
       error: error instanceof Error ? error.message : "Unable to build the example report PDF."
     };
   }
-
-  const email = buildExampleReportEmail({
+  const bindingEmail = buildExampleReportEmail({
     to: args.to,
     from: fromAddress,
     reportUrl,
-    attachment
+    attachment: buildExampleReportAttachment({
+      bytes: reportPdfAsset.bytes,
+      contentType: reportPdfAsset.contentType,
+      mode: "binary"
+    })
+  });
+  const restEmail = buildExampleReportEmail({
+    to: args.to,
+    from: fromAddress,
+    reportUrl,
+    attachment: buildExampleReportAttachment({
+      bytes: reportPdfAsset.bytes,
+      contentType: reportPdfAsset.contentType,
+      mode: "base64"
+    })
   });
 
   if (binding) {
     try {
-      await sendWithEmailBinding(binding, email);
+      await sendWithEmailBinding(binding, bindingEmail);
       return { ok: true, provider: "binding" };
     } catch (error) {
       console.error("waitlist_email_binding_failed", error);
     }
   }
 
-  if (!email.from || !accountId || !apiToken) {
+  if (!restEmail.from || !accountId || !apiToken) {
     return {
       ok: false,
       provider: "none",
@@ -272,7 +323,7 @@ async function sendExampleReportEmail(args: { to: string; origin: string }): Pro
     await sendWithCloudflareRestApi({
       accountId,
       apiToken,
-      email
+      email: restEmail
     });
     return { ok: true, provider: "rest" };
   } catch (error) {

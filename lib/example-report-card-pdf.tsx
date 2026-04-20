@@ -235,13 +235,13 @@ function DashboardPage({
       <View style={styles.table}>
         <View style={styles.tableHeader}>
           <View style={styles.colArea}>
-            <Text style={styles.tableHeaderCell}>Oversight Area</Text>
+            <Text style={styles.tableHeaderCell}>Reporting Area</Text>
           </View>
           <View style={styles.colSummary}>
-            <Text style={styles.tableHeaderCell}>Owner-Side Summary</Text>
+            <Text style={styles.tableHeaderCell}>Current Quarter Assessment</Text>
           </View>
           <View style={styles.colKpi}>
-            <Text style={styles.tableHeaderCell}>Key Indicators / Notes</Text>
+            <Text style={styles.tableHeaderCell}>Key Metrics / Actions</Text>
           </View>
         </View>
         {sections.map((section, index) => {
@@ -272,8 +272,8 @@ function DashboardPage({
       <View style={styles.noteBlock}>
         <Text style={styles.noteLabel}>NOTES:</Text>
         <Text style={styles.noteText}>
-          This packet is an illustrative Amseta report card format designed for trustees,
-          families, and advisors evaluating third-party managed real estate portfolios.
+          Illustrative data set for demonstration only. Production report cards include
+          property-level schedules and client-specific benchmarks.
         </Text>
       </View>
 
@@ -289,15 +289,14 @@ function ExampleReportCardPdfDocument({ report }: { report: ReportDefinition }) 
     <Document title={report.title} author="Amseta" subject={report.subtitle}>
       <Page size={LANDSCAPE_LETTER} style={styles.page}>
         <Text style={styles.coverIntro}>
-          This report was developed as part of Amseta&apos;s Real Estate Fiduciary process to provide
-          an independent, periodic owner-side review of third-party managed real estate assets and
-          manager execution against key performance indicators.
+          This report card summarizes quarterly operating performance, risk items, and
+          priority actions for a third-party managed real estate portfolio.
         </Text>
         <Text style={styles.coverIntro}>
-          We have distilled portfolio oversight into a concise report-card format that clarifies what
-          is working, what needs intervention, and where ownership decisions should be prioritized.
+          The format is designed for ownership, trustees, and advisors who need clear
+          visibility into results, manager execution, and follow-through.
         </Text>
-        <Text style={styles.coverSignature}>-Amseta Real Estate Fiduciary Team</Text>
+        <Text style={styles.coverSignature}>-Prepared by Amseta | Real Estate Fiduciary</Text>
 
         <View style={styles.coverBand}>
           <Text style={styles.reportTitle}>{report.title}</Text>
@@ -316,8 +315,8 @@ function ExampleReportCardPdfDocument({ report }: { report: ReportDefinition }) 
         <View style={styles.noteBlock}>
           <Text style={styles.noteLabel}>REPORT ORIENTATION:</Text>
           <Text style={styles.noteText}>
-            This packet is intended to be decision-ready and printable. It prioritizes ownership
-            visibility, manager accountability, and stewardship continuity during long-term holding periods.
+            This packet presents a concise ownership view of what changed this quarter,
+            where performance is drifting, and which actions require decisions.
           </Text>
         </View>
 
@@ -328,7 +327,7 @@ function ExampleReportCardPdfDocument({ report }: { report: ReportDefinition }) 
         <DashboardPage
           key={`dashboard-${index + 1}`}
           report={report}
-          title={`Oversight Dashboard ${index + 1}`}
+          title={`Portfolio Dashboard ${index + 1}`}
           sections={chunk}
         />
       ))}
