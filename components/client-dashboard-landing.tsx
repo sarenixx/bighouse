@@ -1,63 +1,160 @@
 "use client";
 
-import Link from "next/link";
-import { BarChart3, Cpu, FileText, Globe, Layers, ShieldCheck, Zap } from "lucide-react";
-import { motion } from "motion/react";
+import { FormEvent, useState } from "react";
 
 const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260302_085640_276ea93b-d7da-4418-a09b-2aa5b490e838.mp4";
 
 const primaryNavLinks = [
-  { label: "About", href: "#about" },
-  { label: "Team", href: "#team" },
-  { label: "Who We Serve", href: "#who-we-serve" },
-  { label: "Additional Services", href: "#additional-services" }
+  { label: "The Challenge", href: "#challenge" },
+  { label: "Who We Work With", href: "#who-we-work-with" },
+  { label: "Services Provided", href: "#what-you-get" },
+  { label: "Fee & Start", href: "#engagement" }
 ];
 
 const footerColumns = [
   {
-    title: "Platform",
+    title: "Overview",
     links: [
-      { label: "Property Scorecard", href: "#property-scorecard" },
-      { label: "View Example Report", href: "#example-report" },
-      { label: "Platform Login", href: "/login" }
+      { label: "The Challenge", href: "#challenge" },
+      { label: "The Market Gap", href: "#market-gap" },
+      { label: "What Amseta Provides", href: "#what-we-provide" }
     ]
   },
   {
-    title: "Company",
+    title: "Decision",
     links: [
-      { label: "About", href: "#about" },
-      { label: "Team", href: "#team" },
-      { label: "Who We Serve", href: "#who-we-serve" }
+      { label: "Who We Work With", href: "#who-we-work-with" },
+      { label: "Services Provided", href: "#what-you-get" },
+      { label: "Why It Matters", href: "#why-it-matters" }
     ]
   },
   {
-    title: "Legal",
+    title: "Next Step",
     links: [
-      { label: "Privacy", href: "/privacy" },
-      { label: "Terms", href: "/terms" },
-      { label: "Cookies", href: "#" }
+      { label: "Fee & Start", href: "#engagement" },
+      { label: "Receive Example Report", href: "#top" },
+      { label: "Contact", href: "mailto:hello@amseta.com" }
     ]
   }
 ];
 
-const teamCards = [
+type ChallengeBucket = {
+  key: "independence" | "accountability" | "responsibility";
+  title: string;
+  description: string;
+};
+
+const challengeBuckets: ChallengeBucket[] = [
   {
-    title: "Fiduciary Oversight",
-    description: "We act as the independent umpire between ownership goals and operating reality.",
-    icon: ShieldCheck
-  },
-  {
-    title: "Financial Review",
-    description: "Monthly financial and activity reviews identify drift early and keep decisions grounded.",
-    icon: FileText
-  },
-  {
-    title: "Operational Accountability",
+    key: "independence",
+    title: "Independence",
     description:
-      "Manager and operator performance is tracked against expectations, not presentation quality.",
-    icon: Cpu
+      "Owners often lack an independent party to evaluate how third-party managers are truly performing."
+  },
+  {
+    key: "accountability",
+    title: "Accountability",
+    description:
+      "Fragmented reporting across properties and markets can delay action and weaken follow-through."
+  },
+  {
+    key: "responsibility",
+    title: "Responsibility",
+    description:
+      "Trustees, heirs, and passive owners carry real estate responsibility without direct day-to-day control."
   }
+];
+
+const whoWeWorkWithBubbles = [
+  "Trustees and trust officers",
+  "Families and heirs",
+  "Family advisors",
+  "Passive multi-property owners",
+  "Legacy real estate stewards",
+  "Multi-market ownership groups"
+];
+
+const goodFitItems = [
+  "Third-party managed portfolios with multiple properties or managers",
+  "Owners, trustees, and advisors who need independent monthly oversight",
+  "Stakeholders who want clearer accountability without building an internal team",
+  "Families using dashboards and oversight reports to bring the next generation up to speed on inherited real estate"
+];
+
+const notFitItems = [
+  "Single-property owners seeking only day-to-day property management",
+  "Clients looking for leasing, legal, or tax support",
+  "Portfolios requiring a transaction-focused acquisition or disposition partner"
+];
+
+const whatYouGetItems = [
+  {
+    title: "Monthly owner-side review",
+    description: "Manager reports reviewed, variances flagged, and owner-focused notes delivered."
+  },
+  {
+    title: "Portfolio KPI monitoring",
+    description: "NOI, revenue, expenses, occupancy, delinquency, and concessions tracked consistently."
+  },
+  {
+    title: "Issue log and follow-through",
+    description: "Open items tracked across managers and specialists until resolved."
+  },
+  {
+    title: "Quarterly oversight review",
+    description: "Recurring issues, performance drift, and priorities surfaced for ownership."
+  },
+  {
+    title: "Annual stewardship summary",
+    description: "Year-end oversight summary and next-year focus plan."
+  },
+  {
+    title: "Seasoned executive team",
+    description:
+      "Access to veteran real estate executives with deep experience in ownership oversight, operations, and accountability."
+  }
+];
+
+const whyItMattersPillars = [
+  {
+    title: "Visibility",
+    description: "Clear view of each asset and the full portfolio."
+  },
+  {
+    title: "Verification",
+    description: "Independent check on manager execution."
+  },
+  {
+    title: "Accountability",
+    description: "Owner-side issue tracking and follow-through."
+  },
+  {
+    title: "Continuity",
+    description: "Steady oversight through transitions and disruption."
+  }
+];
+
+const engagementHighlights = [
+  {
+    label: "Fee model",
+    value: "Fixed monthly fee, scoped to portfolio complexity and manager footprint."
+  },
+  {
+    label: "Onboarding timeline",
+    value: "Initial oversight cadence and issue tracking launched within the first 30 days."
+  },
+  {
+    label: "Commitment",
+    value: "Designed for ongoing hold-period stewardship, not one-off transaction support."
+  }
+];
+
+const onboardingSteps = [
+  "20-minute fit call",
+  "Portfolio and reporting intake",
+  "Initial priorities and accountability map",
+  "Monthly oversight cadence launched"
 ];
 
 function Logo({
@@ -117,50 +214,147 @@ function GradientBorderButton({
   );
 }
 
-function GlassCard({
-  eyebrow,
-  title,
-  description,
-  className = "",
-  accent = "amber"
+function SectionTitle({
+  children,
+  className = ""
 }: {
-  eyebrow: string;
-  title: React.ReactNode;
-  description: string;
+  children: React.ReactNode;
   className?: string;
-  accent?: "amber" | "blue" | "mixed";
 }) {
-  const accentClass =
-    accent === "amber"
-      ? "bg-[radial-gradient(circle_at_top,rgba(245,158,11,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12))]"
-      : accent === "blue"
-        ? "bg-[radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12))]"
-        : "bg-[linear-gradient(120deg,rgba(245,158,11,0.05),transparent_35%,rgba(59,130,246,0.05)_100%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12))]";
+  return (
+    <h2
+      className={`mb-6 text-center text-[34px] font-semibold leading-[1.02] tracking-[-0.045em] text-zinc-950 sm:text-[50px] ${className}`}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function ChallengeIcon({ kind }: { kind: ChallengeBucket["key"] }) {
+  if (kind === "independence") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 3 5 6v5c0 4.9 2.9 8.2 7 10 4.1-1.8 7-5.1 7-10V6l-7-3Z" />
+        <path d="M12 8v8" />
+      </svg>
+    );
+  }
+
+  if (kind === "accountability") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <rect x="6" y="4" width="12" height="16" rx="2" />
+        <path d="M9 9h6M9 13h2" />
+        <path d="m11 16 1.7 1.7L16 14.4" />
+      </svg>
+    );
+  }
 
   return (
-    <div className={`group relative overflow-hidden rounded-[32px] border border-black/10 bg-white/45 p-7 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-500 hover:border-black/20 sm:rounded-[40px] sm:p-12 ${className}`}>
-      <div className={`absolute inset-0 z-0 ${accentClass}`} />
-      <div className="relative z-20 max-w-xl">
-        <div className="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-zinc-600">{eyebrow}</div>
-        <h3 className="mb-5 text-3xl font-semibold tracking-tight text-zinc-950 sm:mb-6 sm:text-4xl">{title}</h3>
-        <p className="text-base leading-relaxed text-zinc-700 sm:text-lg">{description}</p>
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M12 4v12" />
+      <path d="M6 8h12" />
+      <path d="M6 8c0 2.2 1.8 4 4 4h2" />
+      <path d="M18 8c0 2.2-1.8 4-4 4h-2" />
+      <path d="M9 20h6" />
+    </svg>
+  );
+}
+
+function WhyItMattersCircle() {
+  return (
+    <div className="mx-auto w-full max-w-[360px] sm:max-w-[440px]">
+      <div className="relative aspect-square">
+        <div
+          className="absolute inset-[10%] rounded-full border border-black/15 shadow-inner"
+          style={{
+            background:
+              "conic-gradient(rgba(24,24,27,0.18) 0deg 90deg, rgba(245,158,11,0.3) 90deg 180deg, rgba(24,24,27,0.15) 180deg 270deg, rgba(245,158,11,0.24) 270deg 360deg)"
+          }}
+        />
+        <div className="absolute inset-[24%] rounded-full border border-black/10 bg-white/90" />
+        <div className="absolute inset-[29%] flex items-center justify-center rounded-full bg-white/95 px-4 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-700 sm:text-xs">
+            Amseta Impact
+          </p>
+        </div>
+        {whyItMattersPillars.map((pillar, index) => {
+          const angle = (index / whyItMattersPillars.length) * Math.PI * 2 - Math.PI / 2;
+          const radius = 34;
+          const x = 50 + Math.cos(angle) * radius;
+          const y = 50 + Math.sin(angle) * radius;
+
+          return (
+            <div
+              key={pillar.title}
+              style={{ left: `${x}%`, top: `${y}%` }}
+              className="absolute w-[118px] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-black/15 bg-white/92 px-3 py-2 text-center shadow-sm sm:w-[132px]"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-900 sm:text-xs">
+                {pillar.title}
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-zinc-700">{pillar.description}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 export function ClientDashboardLandingPage({
-  stats,
   publicMode = false
 }: {
-  stats: {
-    capexProjects: string;
-    totalUnits: string;
-    grossMonthlyRent: string;
-    occupancyTrends: string;
-  };
   publicMode?: boolean;
 }) {
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistState, setWaitlistState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [waitlistMessage, setWaitlistMessage] = useState("");
+
+  async function handleWaitlistSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!waitlistEmail.trim()) {
+      return;
+    }
+
+    setWaitlistState("loading");
+    setWaitlistMessage("");
+
+    try {
+      const response = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: waitlistEmail,
+          source: "landing-page-example-report"
+        })
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+
+      if (!response.ok) {
+        setWaitlistState("error");
+        setWaitlistMessage(
+          payload?.error ?? "Unable to submit your request right now. Please try again shortly."
+        );
+        return;
+      }
+
+      setWaitlistState("success");
+      setWaitlistMessage(
+        payload?.message ?? "Thanks. We will send a test example report shortly."
+      );
+      setWaitlistEmail("");
+    } catch {
+      setWaitlistState("error");
+      setWaitlistMessage("Unable to submit your request right now. Please try again shortly.");
+    }
+  }
+
   return (
     <div className="min-h-screen overflow-hidden bg-white text-zinc-950 selection:bg-amber-500/30 selection:text-zinc-950">
       <div className="fixed inset-0 z-0 overflow-hidden">
@@ -226,430 +420,333 @@ export function ClientDashboardLandingPage({
         className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 pb-16 pt-[124px] text-center sm:px-6 sm:pb-24 sm:pt-[140px]"
       >
         <div className="animate-float-up mb-6 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-md sm:mb-8 sm:text-xs sm:tracking-[0.28em]">
-          Independent Real Estate Fiduciary Oversight
+          Amseta | Real Estate Fiduciary
         </div>
-        <h1 className="animate-float-up max-w-[760px] text-[42px] font-semibold leading-[1.02] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:leading-[1.05] sm:tracking-[-0.04em]">
-          <span className="text-zinc-700">Independent fiduciary</span>
+        <h1 className="animate-float-up max-w-[900px] text-[42px] font-semibold leading-[1.02] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:leading-[1.05] sm:tracking-[-0.04em]">
+          Independent oversight
           <br />
-          oversight for
+          for third-party managed
           <br />
-          real estate ownership
+          real estate portfolios
         </h1>
-        <p className="animate-float-up-delay mt-6 max-w-[620px] text-base leading-relaxed text-zinc-800 sm:mt-8 sm:text-lg">
-          Amseta represents owners, passive investors, family offices, and high-net-worth
-          individuals with one objective: clear truth across every property, manager, and report.
+        <p className="animate-float-up-delay mt-6 max-w-[760px] text-base leading-relaxed text-zinc-800 sm:mt-8 sm:text-lg">
+          Amseta is a real estate fiduciary.
         </p>
-        <div className="animate-float-up-delay-2 mt-8 flex w-full max-w-xl flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-          {publicMode ? (
-            <GradientBorderButton href="/login" className="px-8 py-3 text-sm sm:text-base">
-              Enter Platform
-            </GradientBorderButton>
-          ) : (
-            <GradientBorderButton className="px-8 py-3 text-sm sm:text-base">Enter Platform</GradientBorderButton>
-          )}
-          <a
-            href="#example-report"
-            className="rounded-full border border-black/10 bg-white/55 px-8 py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-white/70 sm:text-base"
-          >
-            View Example Report
-          </a>
-        </div>
-
-        <div className="animate-float-up-delay-3 mt-12 w-full sm:mt-16">
-          <div className="mx-auto flex max-w-[620px] items-center gap-3 rounded-[20px] border border-black/10 bg-white/55 px-4 py-4 text-left shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-md sm:max-w-none sm:gap-4 sm:px-6">
-            <Logo className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" />
-            <span className="text-sm font-medium leading-relaxed text-zinc-900">
-              We are not the operator. We are the independent fiduciary umpire for portfolio truth.
-            </span>
-            <svg viewBox="0 0 48 48" className="ml-auto h-6 w-6 shrink-0 sm:h-7 sm:w-7" aria-hidden="true">
-              <defs>
-                <linearGradient id="amseta-ring" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F59E0B" />
-                  <stop offset="100%" stopColor="#3B82F6" />
-                </linearGradient>
-              </defs>
-              <circle cx="24" cy="24" r="18" fill="none" stroke="#3f3f46" strokeWidth="3" />
-              <path
-                d="M24 6a18 18 0 0 1 18 18"
-                fill="none"
-                stroke="url(#amseta-ring)"
-                strokeLinecap="round"
-                strokeWidth="3"
-              />
-            </svg>
+        <div className="animate-float-up-delay-2 mt-10 w-full max-w-3xl rounded-[24px] border border-black/10 bg-white/55 p-4 backdrop-blur-md sm:p-6">
+          <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-zinc-700 sm:text-xs sm:tracking-[0.32em]">
+            Receive an example report
           </div>
+          <p className="mb-4 text-sm leading-relaxed text-zinc-800 sm:text-base">
+            Enter your email address and we will send a test example report.
+          </p>
+          {publicMode ? (
+            <form onSubmit={handleWaitlistSubmit} className="mb-4 text-left">
+              <label htmlFor="waitlist-email" className="mb-2 block text-sm font-semibold text-zinc-800">
+                Email address
+              </label>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  id="waitlist-email"
+                  type="email"
+                  value={waitlistEmail}
+                  onChange={(event) => {
+                    setWaitlistEmail(event.target.value);
+                    if (waitlistState !== "idle") {
+                      setWaitlistState("idle");
+                      setWaitlistMessage("");
+                    }
+                  }}
+                  placeholder="Enter your email address"
+                  autoComplete="email"
+                  required
+                  className="h-12 w-full rounded-full border border-black/10 bg-white px-5 text-base text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-400 focus:outline-none sm:flex-1"
+                />
+                <button
+                  type="submit"
+                  disabled={waitlistState === "loading"}
+                  className="h-12 rounded-full bg-zinc-950 px-6 text-sm font-semibold uppercase tracking-[0.14em] text-white transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 sm:text-xs"
+                >
+                  {waitlistState === "loading" ? "Sending..." : "Send"}
+                </button>
+              </div>
+            </form>
+          ) : null}
+          {publicMode && waitlistMessage ? (
+            <p
+              className={`mb-4 text-sm leading-relaxed ${
+                waitlistState === "error" ? "text-red-700" : "text-emerald-700"
+              }`}
+            >
+              {waitlistMessage}
+            </p>
+          ) : null}
         </div>
       </main>
 
-      <section className="relative z-10 border-y border-black/10 bg-white/35 backdrop-blur-sm">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-4">
-          {[
-            {
-              label: "Who We Serve",
-              value: "Owners & Investors",
-              detail: "Entrepreneurs, family offices, and passive investors with long-term portfolios."
-            },
-            {
-              label: "Core Product",
-              value: "Property Scorecard",
-              detail: "A monthly diagnostic report for each property, built for ownership decisions."
-            },
-            {
-              label: "Operating Role",
-              value: "Independent Umpire",
-              detail: "Amseta sits outside the operator workflow to maintain objective accountability."
-            },
-            {
-              label: "Brand Promise",
-              value: "Time Back",
-              detail: "Peace of mind and confidence without chasing fragmented manager updates."
-            }
-          ].map((stat, index) => (
-            <div
-              key={stat.label}
-              className={`flex flex-col gap-3 border-b border-black/10 p-8 sm:p-10 md:border-b-0 md:p-12 ${index < 3 ? "md:border-r md:border-black/10" : ""}`}
-            >
-              <div className="text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">{stat.value}</div>
-              <div className="text-xs uppercase tracking-[0.24em] text-zinc-600 sm:text-sm sm:tracking-widest">{stat.label}</div>
-              <div className="max-w-[18ch] text-sm leading-relaxed text-zinc-700">{stat.detail}</div>
-            </div>
-          ))}
-        </div>
-        <div className="border-t border-black/10 py-6 text-center">
-          <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-            Clarity first. Detail when you need it.
+      <section id="challenge" className="relative z-10 pb-10 pt-6 sm:pb-14 sm:pt-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionTitle className="text-[38px] sm:text-[54px]">The Challenge</SectionTitle>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {challengeBuckets.map((bucket) => (
+              <div
+                key={bucket.title}
+                className="rounded-[18px] border border-black/10 bg-white/65 px-5 py-6 text-center"
+              >
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-black/15 bg-white/90 text-zinc-900">
+                  <ChallengeIcon kind={bucket.key} />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold leading-tight text-zinc-950 sm:text-xl">
+                  {bucket.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-zinc-800 sm:text-base">
+                  {bucket.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <section id="property-scorecard" className="relative z-10 py-24 sm:py-32">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 sm:gap-20 sm:px-6 lg:grid-cols-2">
-          <div>
-            <div className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">
-              Core Product
+      <section id="market-gap" className="relative z-10 pb-16 pt-10 sm:pb-24 sm:pt-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionTitle>The Market Gap</SectionTitle>
+          <div className="rounded-[18px] border border-black/10 bg-white/65 px-6 py-7 text-center sm:px-8 sm:py-9">
+            <div className="space-y-3 text-sm leading-relaxed text-zinc-800 sm:text-base">
+              <p>
+                Property management covers operations. Brokerage covers transactions. Tax, legal,
+                and compliance advisors cover their own domains.
+              </p>
+              <p>
+                What&apos;s missing is independent, owner-side oversight during the hold period,
+                when assets are owned but not actively transacted.
+              </p>
+              <p>
+                That gap sits between acquisition and disposition, and it is where accountability
+                often breaks down.
+              </p>
+              <p className="font-semibold text-zinc-950">Amseta fills that gap.</p>
             </div>
-            <div className="mb-8 flex flex-wrap gap-3">
-              {[BarChart3, ShieldCheck, FileText].map((Icon, index) => (
+          </div>
+        </div>
+      </section>
+
+      <section id="what-we-provide" className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionTitle>What Amseta Provides</SectionTitle>
+          <div className="rounded-[24px] border border-black/10 bg-white/65 px-6 py-8 backdrop-blur-md sm:px-9 sm:py-10">
+            <div className="space-y-4 text-sm leading-relaxed text-zinc-800 sm:text-base">
+              <p>
+                Amseta is a fixed-fee owner-side oversight and coordination service for real estate
+                portfolios managed by third parties.
+              </p>
+              <p>
+                We sit between ownership and service providers to verify performance, maintain
+                accountability, and coordinate follow-through during long-term hold periods.
+              </p>
+            </div>
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {["Independent oversight", "Fixed-fee stewardship", "Cross-provider coordination"].map((item) => (
                 <div
-                  key={index}
-                  className="flex items-center gap-2 rounded-full border border-black/10 bg-white/55 px-4 py-2 text-sm text-zinc-800 backdrop-blur-md"
+                  key={item}
+                  className="rounded-full border border-black/15 bg-white/90 px-4 py-2 text-center text-sm font-semibold text-zinc-900"
                 >
-                  <Icon className="h-4 w-4 text-amber-400" />
-                  <span>
-                    {index === 0
-                      ? "Financial Review"
-                      : index === 1
-                        ? "Operational Insights"
-                        : "Accountability Tracking"}
-                  </span>
+                  {item}
                 </div>
               ))}
             </div>
-
-            <h2 className="mb-8 text-[40px] font-semibold leading-[1.05] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:tracking-[-0.04em]">
-              Property Scorecard <br /> <span className="text-zinc-700">monthly clarity for each asset</span>
-            </h2>
-            <p className="mb-8 max-w-lg text-base leading-relaxed text-zinc-800 sm:mb-10 sm:text-lg">
-              The Property Scorecard is Amseta&apos;s monthly diagnostic report for every property.
-              Like a credit score for real estate ownership, it distills financial reporting,
-              operating activity, capital planning, and manager performance into a single,
-              decision-ready signal.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
-              <a
-                href="#example-report"
-                className="rounded-full border border-black/10 bg-white/55 px-8 py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-white/70 sm:text-base"
-              >
-                View Example Report
-              </a>
-              {publicMode ? (
-                <GradientBorderButton href="/login" className="px-8 py-3 text-sm sm:text-base">
-                  Enter Platform
-                </GradientBorderButton>
-              ) : (
-                <GradientBorderButton className="px-8 py-3 text-sm sm:text-base">Enter Platform</GradientBorderButton>
-              )}
-            </div>
-          </div>
-
-          <div className="group relative">
-            <div
-              id="example-report"
-              className="relative aspect-[3/4] overflow-hidden rounded-[32px] border border-black/10 bg-white/45 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-md"
-            >
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0.08))]" />
-              <div className="absolute inset-x-4 top-4 z-20 rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-md sm:inset-x-8 sm:top-8 sm:text-xs sm:tracking-[0.26em]">
-                Sample monthly report
-              </div>
-              <div className="absolute inset-x-4 bottom-4 z-20 rounded-[20px] border border-black/10 bg-white/65 px-4 py-4 backdrop-blur-md sm:inset-x-8 sm:bottom-8 sm:rounded-[24px] sm:px-6 sm:py-5">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-600 sm:text-xs sm:tracking-[0.26em]">
-                  Ownership scorecard snapshot
-                </div>
-                <div className="mt-2 text-base font-medium leading-relaxed text-zinc-950 sm:text-lg">
-                  One monthly snapshot of financial health, operational drift, and accountability
-                  signals.
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-700 sm:text-sm">
-                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
-                    Occupancy: {stats.occupancyTrends}
-                  </div>
-                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
-                    Rent Flow: {stats.grossMonthlyRent}
-                  </div>
-                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
-                    Active Capex: {stats.capexProjects}
-                  </div>
-                  <div className="rounded-xl border border-black/10 bg-white/70 px-3 py-2">
-                    Total Units: {stats.totalUnits}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      <section id="who-we-serve" className="relative z-10 py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="rounded-[32px] border border-black/10 bg-white/45 px-6 py-12 backdrop-blur-md sm:rounded-[40px] sm:px-12 sm:py-20">
-            <div className="animate-float-up mb-5 inline-flex rounded-full border border-black/10 bg-white/60 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-700 backdrop-blur-xl sm:mb-6 sm:text-xs sm:tracking-[0.3em]">
-              Who We Serve
-            </div>
-            <h2 className="animate-float-up max-w-[900px] text-[48px] font-semibold leading-[0.98] tracking-[-0.05em] text-zinc-950 sm:text-[80px] sm:leading-[1]">
-              Built for ownership
-              <br />
-              that demands clarity
-            </h2>
-            <p className="animate-float-up-delay mt-6 max-w-2xl text-base leading-relaxed text-zinc-800 sm:mt-10 sm:text-xl">
-              We serve real estate owners, passive investors, family offices, and
-              high-net-worth individuals who want objective oversight and accountable execution
-              across every property.
-            </p>
-            <div className="animate-float-up-delay-2 mt-8 flex flex-wrap gap-3">
-              {["Real Estate Owners", "Passive Investors", "Family Offices", "High-Net-Worth Individuals"].map(
-                (audience) => (
-                  <div
-                    key={audience}
-                    className="rounded-full border border-black/10 bg-white/60 px-4 py-2 text-sm font-medium text-zinc-800"
-                  >
-                    {audience}
-                  </div>
-                )
-              )}
-            </div>
-            <div className="animate-float-up-delay-3 mt-10 rounded-[20px] border border-black/10 bg-white/60 px-5 py-4 text-sm leading-relaxed text-zinc-800 sm:max-w-3xl sm:text-base">
-              Amseta does not support fiduciaries. Amseta is the fiduciary layer.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="about" className="relative z-10 py-24 sm:py-40">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mb-16 text-center sm:mb-24">
-            <div className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">
-              About
-            </div>
-            <h2 className="mb-6 text-[40px] font-semibold leading-[1.05] tracking-[-0.05em] text-zinc-950 sm:text-[60px] sm:tracking-[-0.04em]">
-              Clarity without the noise
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <GlassCard
-              eyebrow="What Amseta Is"
-              title={
-                <>
-                  Independent <br /> Fiduciary Layer
-                </>
-              }
-              description="Amseta consolidates financial reporting, property activity, capital planning, and manager performance into one oversight experience for ownership."
-              accent="amber"
-              className="min-h-[320px] sm:min-h-[400px]"
-            />
-
-            <GlassCard
-              eyebrow="What Amseta Is Not"
-              title={
-                <>
-                  Not the <br /> Operator
-                </>
-              }
-              description="We are not the property manager. We stay independent so accountability remains objective, transparent, and decision-ready."
-              accent="blue"
-              className="min-h-[320px] sm:min-h-[400px]"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section id="team" className="relative z-10 py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mb-10 text-center sm:mb-14">
-            <div className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">Team</div>
-            <h3 className="text-[34px] font-semibold leading-tight tracking-[-0.04em] text-zinc-950 sm:text-[48px]">
-              A multidisciplinary oversight team
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {teamCards.map((card, index) => (
-              <motion.div
-                key={card.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.08, duration: 0.45 }}
-                className="rounded-[28px] border border-black/10 bg-white/55 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-md sm:p-8"
-              >
-                <card.icon className="mb-4 h-6 w-6 text-zinc-800" />
-                <h4 className="mb-3 text-xl font-semibold text-zinc-950">{card.title}</h4>
-                <p className="text-sm leading-relaxed text-zinc-700 sm:text-base">{card.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="additional-services" className="relative z-10 py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="mb-10 text-center sm:mb-14">
-            <div className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-600">
-              Additional Services
-            </div>
-            <h3 className="text-[34px] font-semibold leading-tight tracking-[-0.04em] text-zinc-950 sm:text-[48px]">
-              Broader owner-side support
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[
-              {
-                title: "Portfolio Narrative Briefs",
-                description:
-                  "Decision-ready monthly briefings for principals and investment committees.",
-                icon: Layers
-              },
-              {
-                title: "Manager Performance Reviews",
-                description:
-                  "Structured accountability conversations tied to agreed operating expectations.",
-                icon: Globe
-              },
-              {
-                title: "Capital Plan Oversight",
-                description:
-                  "Independent tracking of capex execution, sequencing risk, and reporting quality.",
-                icon: Zap
-              }
-            ].map((service) => (
+      <section id="what-you-get" className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionTitle>Services Provided</SectionTitle>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {whatYouGetItems.map((item) => (
               <div
-                key={service.title}
-                className="rounded-[28px] border border-black/10 bg-white/55 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-md sm:p-8"
+                key={item.title}
+                className="rounded-[20px] border border-black/10 bg-white/65 px-5 py-5 text-left"
               >
-                <service.icon className="mb-4 h-6 w-6 text-zinc-800" />
-                <h4 className="mb-3 text-xl font-semibold text-zinc-950">{service.title}</h4>
-                <p className="text-sm leading-relaxed text-zinc-700 sm:text-base">{service.description}</p>
+                <h3 className="mb-2 text-base font-semibold text-zinc-950 sm:text-lg">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-zinc-800 sm:text-base">{item.description}</p>
               </div>
             ))}
+          </div>
+          <p className="mx-auto mt-6 max-w-4xl text-center text-sm leading-relaxed text-zinc-800 sm:text-base">
+            This is owner-side oversight. Amseta does not replace property management, legal, tax,
+            or leasing providers.
+          </p>
+        </div>
+      </section>
+
+      <section id="who-we-work-with" className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionTitle>Who We Work With</SectionTitle>
+          <ul className="mx-auto flex max-w-5xl flex-wrap justify-center gap-3 sm:gap-4">
+            {whoWeWorkWithBubbles.map((item) => (
+              <li
+                key={item}
+                className="rounded-full border border-black/15 bg-white/82 px-4 py-2 text-center text-sm font-medium text-zinc-900 backdrop-blur-sm sm:px-5 sm:py-2.5 sm:text-base"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-[20px] border border-black/10 bg-white/65 px-5 py-5">
+              <h3 className="mb-3 text-base font-semibold uppercase tracking-[0.08em] text-zinc-900 sm:text-lg">
+                Good fit
+              </h3>
+              <ul className="space-y-2">
+                {goodFitItems.map((item) => (
+                  <li key={item} className="text-sm leading-relaxed text-zinc-800 sm:text-base">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-[20px] border border-black/10 bg-white/65 px-5 py-5">
+              <h3 className="mb-3 text-base font-semibold uppercase tracking-[0.08em] text-zinc-900 sm:text-lg">
+                Not a fit
+              </h3>
+              <ul className="space-y-2">
+                {notFitItems.map((item) => (
+                  <li key={item} className="text-sm leading-relaxed text-zinc-800 sm:text-base">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="relative z-10 overflow-hidden">
-        <div className="relative z-20 py-28 text-center sm:py-48">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6">
-            <div className="animate-float-up mb-10 flex justify-center sm:mb-16">
-              <div className="flex h-16 w-16 items-center justify-center rounded-[20px] border border-black/10 bg-white/60 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-md sm:h-20 sm:w-20 sm:rounded-[24px]">
-                <Logo className="h-8 w-8 sm:h-10 sm:w-10" />
-              </div>
-            </div>
-            <div className="animate-float-up mb-5 text-[10px] font-semibold uppercase tracking-[0.28em] text-zinc-600 sm:mb-6 sm:text-xs sm:tracking-[0.32em]">
-              Ready when you are
-            </div>
-            <h2 className="animate-float-up mb-8 text-[44px] font-semibold leading-[0.98] tracking-[-0.05em] text-zinc-950 sm:mb-10 sm:text-[80px] sm:leading-[1]">
-              Ready for clear <br /> <span className="text-zinc-950">portfolio oversight?</span>
-            </h2>
-            <p className="animate-float-up-delay mx-auto mb-10 max-w-2xl text-base leading-relaxed text-zinc-700 sm:mb-16 sm:text-xl">
-              For owners who want clear reporting, strong accountability, and a better view across
-              every asset.
+      <section id="why-it-matters" className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionTitle>Why It Matters</SectionTitle>
+          <div className="rounded-[32px] border border-black/10 bg-white/55 px-6 py-10 backdrop-blur-md sm:px-10 sm:py-14">
+            <p className="mb-8 text-center text-base leading-relaxed text-zinc-800 sm:text-lg">
+              Amseta gives ownership a repeatable oversight loop that improves decisions and
+              reduces hidden drift over long hold periods.
             </p>
-            <div className="animate-float-up-delay-3 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center sm:gap-8">
-              {publicMode ? (
-                <Link
-                  href="/login"
-                  className="rounded-full bg-zinc-950 px-9 py-4 text-base font-bold text-white shadow-[0_20px_40px_rgba(15,23,42,0.12)] transition-all hover:scale-105 hover:bg-zinc-800 sm:px-12 sm:py-5 sm:text-lg"
-                >
-                  Enter the Platform
-                </Link>
-              ) : (
-                <button className="rounded-full bg-zinc-950 px-9 py-4 text-base font-bold text-white shadow-[0_20px_40px_rgba(15,23,42,0.12)] transition-all hover:scale-105 hover:bg-zinc-800 sm:px-12 sm:py-5 sm:text-lg">
-                  Enter the Platform
-                </button>
-              )}
-              {publicMode ? (
-                <a
-                  href="#example-report"
-                  className="rounded-full border border-black/10 bg-white/50 px-9 py-4 text-base font-bold text-zinc-950 transition-all hover:bg-white/70 sm:px-12 sm:py-5 sm:text-lg"
-                >
-                  View Example Report
-                </a>
-              ) : (
-                <a
-                  href="#example-report"
-                  className="rounded-full border border-black/10 bg-white/50 px-9 py-4 text-base font-bold text-zinc-950 transition-all hover:bg-white/70 sm:px-12 sm:py-5 sm:text-lg"
-                >
-                  View Example Report
-                </a>
-              )}
+            <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+              <WhyItMattersCircle />
+              <ul className="space-y-3">
+                {whyItMattersPillars.map((pillar) => (
+                  <li
+                    key={pillar.title}
+                    className="rounded-[18px] border border-black/10 bg-white/65 px-4 py-3"
+                  >
+                    <p className="text-sm font-semibold uppercase tracking-[0.08em] text-zinc-950 sm:text-base">
+                      {pillar.title}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-zinc-800 sm:text-base">
+                      {pillar.description}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-zinc-600 sm:text-base">
-              Peace of mind. Time back. Confidence in long-term ownership.
+          </div>
+        </div>
+      </section>
+
+      <section id="engagement" className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionTitle>Fee & Start</SectionTitle>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="rounded-[24px] border border-black/10 bg-white/65 px-6 py-7">
+              <h3 className="mb-4 text-lg font-semibold text-zinc-950 sm:text-xl">
+                Commercial clarity
+              </h3>
+              <ul className="space-y-3">
+                {engagementHighlights.map((item) => (
+                  <li key={item.label} className="text-sm leading-relaxed text-zinc-800 sm:text-base">
+                    <span className="font-semibold text-zinc-950">{item.label}:</span> {item.value}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-[24px] border border-black/10 bg-white/65 px-6 py-7">
+              <h3 className="mb-4 text-lg font-semibold text-zinc-950 sm:text-xl">How we start</h3>
+              <ol className="space-y-3">
+                {onboardingSteps.map((step, index) => (
+                  <li
+                    key={step}
+                    className="flex items-start gap-3 text-sm leading-relaxed text-zinc-800 sm:text-base"
+                  >
+                    <span className="mt-[1px] inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-zinc-950 text-xs font-semibold text-white">
+                      {index + 1}
+                    </span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+          <div className="mt-6 rounded-[24px] border border-black/10 bg-white/75 px-6 py-8 text-center">
+            <p className="mx-auto max-w-3xl text-sm leading-relaxed text-zinc-800 sm:text-base">
+              Ready to see what this looks like on real numbers and real manager reporting?
+            </p>
+            <a
+              href="#top"
+              className="mt-5 inline-flex items-center justify-center rounded-full bg-zinc-950 px-6 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-white transition-all hover:bg-zinc-800 sm:text-sm"
+            >
+              Receive an example report
+            </a>
+            <p className="mt-4 text-sm text-zinc-700">
+              Questions now?{" "}
+              <a href="mailto:hello@amseta.com" className="font-semibold text-zinc-900">
+                hello@amseta.com
+              </a>
+              .
             </p>
           </div>
         </div>
+      </section>
 
-        <footer className="relative z-20 py-16 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="mb-16 flex flex-col justify-between gap-12 sm:mb-24 sm:gap-16 lg:flex-row">
-              <div className="max-w-xs">
-                <div className="flex items-center gap-3">
-                  <Logo className="h-9 w-9" />
-                  <span className="text-2xl font-semibold tracking-tighter">Amseta</span>
-                </div>
-                <p className="mt-6 max-w-xs leading-relaxed text-zinc-700">
-                  Commercial real estate oversight designed for owners who need sharper visibility, cleaner reporting, and stronger operational accountability.
-                </p>
+      <footer className="relative z-10 py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-16 flex flex-col justify-between gap-12 sm:mb-24 sm:gap-16 lg:flex-row">
+            <div className="max-w-xs">
+              <div className="flex items-center gap-3">
+                <Logo className="h-9 w-9" />
+                <span className="text-2xl font-semibold tracking-tighter">Amseta</span>
               </div>
-
-              <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-12 lg:gap-16">
-                {footerColumns.map((column) => (
-                  <div key={column.title}>
-                    <div className="text-xs font-bold uppercase tracking-widest text-zinc-700">{column.title}</div>
-                    <div className="mt-6 flex flex-col gap-4 text-sm text-zinc-700">
-                      {column.links.map((link) => (
-                        <a
-                          key={link.label}
-                          href={link.href}
-                          className="transition-colors hover:text-zinc-950"
-                        >
-                          {link.label}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="mt-6 max-w-xs leading-relaxed text-zinc-700">
+                Real estate fiduciary oversight for third-party managed portfolios.
+              </p>
             </div>
 
-            <div className="flex flex-col items-start justify-between gap-5 pt-8 text-sm text-zinc-700 sm:pt-12 md:flex-row md:items-center">
-              <div>© 2026 Amseta. All rights reserved.</div>
-              <div className="flex gap-8 text-xs font-bold uppercase tracking-widest text-zinc-700">
-                <a href="#" className="transition-colors hover:text-zinc-950">
-                  LinkedIn
-                </a>
-              </div>
+            <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-12 lg:gap-16">
+              {footerColumns.map((column) => (
+                <div key={column.title}>
+                  <div className="text-xs font-bold uppercase tracking-widest text-zinc-700">{column.title}</div>
+                  <div className="mt-6 flex flex-col gap-4 text-sm text-zinc-700">
+                    {column.links.map((link) => (
+                      <a key={link.label} href={link.href} className="transition-colors hover:text-zinc-950">
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </footer>
-      </div>
+
+          <div className="flex flex-col items-start justify-between gap-5 pt-8 text-sm text-zinc-700 sm:pt-12 md:flex-row md:items-center">
+            <div>© 2026 Amseta. All rights reserved.</div>
+            <div className="flex gap-8 text-xs font-bold uppercase tracking-widest text-zinc-700">
+              <a
+                href="https://www.linkedin.com/in/josh-e-7778668a/"
+                className="transition-colors hover:text-zinc-950"
+              >
+                LinkedIn
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

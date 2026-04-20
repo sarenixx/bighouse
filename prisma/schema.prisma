@@ -59,6 +59,19 @@ model RateLimitBucket {
   updatedAt  DateTime @default(now())
 }
 
+model WaitlistEntry {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  company   String?
+  source    String   @default("landing-page")
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([status])
+}
+
 model Manager {
   id             String     @id
   tenantId       String
